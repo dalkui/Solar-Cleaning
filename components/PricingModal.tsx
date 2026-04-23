@@ -329,7 +329,7 @@ export default function PricingModal() {
 
           {/* CTA */}
           <a
-            href="/contact"
+            href={`/checkout?plan=${active.id}`}
             className={`btn ${active.highlight ? "btn-gold" : "btn-outline"}`}
             style={{ display: "inline-block", minWidth: "180px" }}
           >
