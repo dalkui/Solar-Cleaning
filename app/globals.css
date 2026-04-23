@@ -104,6 +104,8 @@ body {
   .trust-grid  { grid-template-columns: 1fr 1fr !important; }
   .area-grid   { grid-template-columns: 1fr !important; }
   .pricing-selector-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .checkout-grid { grid-template-columns: 1fr !important; }
+  .checkout-page { padding: 80px 20px 60px !important; }
 }
 
 /* Accordion animations */
