@@ -32,19 +32,36 @@ export async function POST(req: NextRequest) {
     // Create customer
     const customer = await stripe.customers.create({ email, name });
 
-    // Create subscription with first clean as invoice item
+    // Add first clean as a pending invoice item before creating subscription
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (stripe.invoiceItems.create as any)({
+      customer: customer.id,
+      price: prices.firstClean,
+    });
+
+    // Create subscription — first invoice will include the above invoice item
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: prices.monthly }],
-      add_invoice_items: [{ price: prices.firstClean, quantity: 1 }],
       payment_behavior: "default_incomplete",
       payment_settings: { save_default_payment_method: "on_subscription" },
       expand: ["latest_invoice.payment_intent"],
       metadata: { plan },
     });
 
-    const invoice = subscription.latest_invoice as Stripe.Invoice & { payment_intent: Stripe.PaymentIntent };
+    const invoice = subscription.latest_invoice as Stripe.Invoice & {
+      payment_intent: Stripe.PaymentIntent | null;
+    };
+
+    if (!invoice) {
+      return NextResponse.json({ error: "No invoice created" }, { status: 500 });
+    }
+
     const paymentIntent = invoice.payment_intent;
+
+    if (!paymentIntent?.client_secret) {
+      return NextResponse.json({ error: "No payment intent created" }, { status: 500 });
+    }
 
     return NextResponse.json({
       subscriptionId: subscription.id,
