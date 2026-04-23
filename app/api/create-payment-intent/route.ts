@@ -35,17 +35,15 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       line_items: [
         {
-          price: prices.firstClean,
-          quantity: 1,
-        },
-        {
           price: prices.monthly,
           quantity: 1,
         },
       ],
       subscription_data: {
         metadata: { plan },
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        add_invoice_items: [{ price: prices.firstClean, quantity: 1 }],
+      } as any,
       success_url: `${origin}/success?plan=${plan}`,
       cancel_url: `${origin}/#pricing`,
       currency: "aud",
@@ -60,7 +58,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Stripe error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
