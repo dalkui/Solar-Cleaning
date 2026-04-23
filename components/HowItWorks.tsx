@@ -33,7 +33,6 @@ export default function HowItWorks() {
               key={step.num}
               value={step.num}
               style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "14px", overflow: "hidden" }}
-              className="faq-item"
             >
               <AccordionTrigger
                 style={{ padding: "20px 28px", cursor: "pointer", width: "100%" }}

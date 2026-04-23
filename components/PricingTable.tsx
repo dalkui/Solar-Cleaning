@@ -1,5 +1,4 @@
 "use client";
-import { GlowCard } from "@/components/ui/spotlight-card";
 
 const plans = [
   {
@@ -81,12 +80,15 @@ export default function PricingTable() {
 
         <div className="pricing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", alignItems: "start" }}>
           {plans.map((plan) => (
-            <GlowCard key={plan.tier} glowColor="orange" style={{
+            <div key={plan.tier} style={{
               background: plan.highlight ? "rgba(245,197,24,0.06)" : "var(--bg-card)",
+              border: "1px solid var(--border)",
+              borderRadius: "14px",
               padding: "32px 28px",
               display: "flex",
               flexDirection: "column",
               minWidth: "260px",
+              position: "relative",
             }}>
               {plan.tag && (
                 <div style={{ position: "absolute", top: "-13px", left: "50%", transform: "translateX(-50%)", background: plan.highlight ? "var(--gold)" : "var(--bg-card)", border: plan.highlight ? "none" : "1px solid var(--border)", color: plan.highlight ? "#08101C" : "var(--text-sub)", padding: "3px 14px", borderRadius: "999px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap", fontFamily: "var(--body)" }}>
@@ -128,7 +130,7 @@ export default function PricingTable() {
                   ⚠️ {plan.lockIn}
                 </p>
               )}
-            </GlowCard>
+            </div>
           ))}
         </div>
 
