@@ -74,43 +74,18 @@ const GlowCard: React.FC<GlowCardProps> = ({
   style,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    const isTouch = window.matchMedia("(hover: none)").matches;
-
-    if (isTouch) {
-      let angle = 0;
-      const animate = () => {
-        const card = cardRef.current;
-        if (!card) return;
-        const rect = card.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        const radius = Math.max(rect.width, rect.height) * 0.65;
-        const x = cx + radius * Math.cos(angle);
-        const y = cy + radius * Math.sin(angle);
-        card.style.setProperty("--x", x.toFixed(2));
-        card.style.setProperty("--xp", (x / window.innerWidth).toFixed(2));
-        card.style.setProperty("--y", y.toFixed(2));
-        card.style.setProperty("--yp", (y / window.innerHeight).toFixed(2));
-        angle += 0.025;
-        rafRef.current = requestAnimationFrame(animate);
-      };
-      rafRef.current = requestAnimationFrame(animate);
-      return () => cancelAnimationFrame(rafRef.current);
-    } else {
-      const syncPointer = (e: PointerEvent) => {
-        if (cardRef.current) {
-          cardRef.current.style.setProperty("--x", e.clientX.toFixed(2));
-          cardRef.current.style.setProperty("--xp", (e.clientX / window.innerWidth).toFixed(2));
-          cardRef.current.style.setProperty("--y", e.clientY.toFixed(2));
-          cardRef.current.style.setProperty("--yp", (e.clientY / window.innerHeight).toFixed(2));
-        }
-      };
-      document.addEventListener("pointermove", syncPointer);
-      return () => document.removeEventListener("pointermove", syncPointer);
-    }
+    const syncPointer = (e: PointerEvent) => {
+      if (cardRef.current) {
+        cardRef.current.style.setProperty("--x", e.clientX.toFixed(2));
+        cardRef.current.style.setProperty("--xp", (e.clientX / window.innerWidth).toFixed(2));
+        cardRef.current.style.setProperty("--y", e.clientY.toFixed(2));
+        cardRef.current.style.setProperty("--yp", (e.clientY / window.innerHeight).toFixed(2));
+      }
+    };
+    document.addEventListener("pointermove", syncPointer);
+    return () => document.removeEventListener("pointermove", syncPointer);
   }, []);
 
   const { base, spread } = glowColorMap[glowColor];
