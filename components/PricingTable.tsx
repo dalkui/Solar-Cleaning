@@ -2,6 +2,7 @@
 
 const plans = [
   {
+    id: "elite",
     tier: "A",
     name: "Elite",
     tag: "Premium",
@@ -24,6 +25,7 @@ const plans = [
     cta: "Go Elite",
   },
   {
+    id: "standard",
     tier: "B",
     name: "Standard",
     tag: "Most Popular",
@@ -43,6 +45,7 @@ const plans = [
     cta: "Start for $150",
   },
   {
+    id: "basic",
     tier: "C",
     name: "Basic",
     tag: null,
@@ -121,7 +124,7 @@ export default function PricingTable() {
                 ))}
               </ul>
 
-              <a href="/contact" className={`btn pricing-card-btn ${plan.highlight ? "btn-gold" : "btn-outline"}`} style={{ width: "100%", fontSize: "14px" }}>
+              <a href={`/book?plan=${plan.id}`} className={`btn pricing-card-btn ${plan.highlight ? "btn-gold" : "btn-outline"}`} style={{ width: "100%", fontSize: "14px" }}>
                 {plan.cta}
               </a>
 

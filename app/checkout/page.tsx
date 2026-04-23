@@ -29,10 +29,12 @@ function CheckoutInner() {
 
     async function init() {
       // Fetch client secret
+      const bookingDetails = JSON.parse(sessionStorage.getItem("bookingDetails") || "{}");
+
       const res = await fetch("/api/create-subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, bookingDetails }),
       });
       const { clientSecret, error } = await res.json();
       if (error || !clientSecret) {

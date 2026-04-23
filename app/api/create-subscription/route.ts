@@ -19,7 +19,7 @@ const planPrices: Record<string, { firstClean: string; monthly: string }> = {
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   try {
-    const { plan } = await req.json();
+    const { plan, bookingDetails = {} } = await req.json();
 
     const prices = planPrices[plan];
     if (!prices) {
@@ -35,6 +35,19 @@ export async function POST(req: NextRequest) {
         { price: prices.firstClean, quantity: 1 },
         { price: prices.monthly, quantity: 1 },
       ],
+      subscription_data: {
+        metadata: {
+          plan,
+          name:     bookingDetails.name     || "",
+          phone:    bookingDetails.phone    || "",
+          street:   bookingDetails.street   || "",
+          suburb:   bookingDetails.suburb   || "",
+          state:    bookingDetails.state    || "",
+          postcode: bookingDetails.postcode || "",
+          stories:  bookingDetails.stories  || "",
+          panels:   bookingDetails.panels   || "",
+        },
+      },
       return_url: `${origin}/success?plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
     });
 
