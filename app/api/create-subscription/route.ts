@@ -20,7 +20,9 @@ const planPrices: Record<string, { firstClean: string; monthly: string; name: st
 };
 
 export async function POST(req: NextRequest) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: "2026-03-25.dahlia",
+  });
   try {
     const { plan, email, name } = await req.json();
 
@@ -32,14 +34,13 @@ export async function POST(req: NextRequest) {
     // Create customer
     const customer = await stripe.customers.create({ email, name });
 
-    // Add first clean as a pending invoice item before creating subscription
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (stripe.invoiceItems.create as any)({
+    // Add first clean as pending invoice item
+    await stripe.invoiceItems.create({
       customer: customer.id,
       pricing: { price: prices.firstClean },
     });
 
-    // Create subscription — first invoice will include the above invoice item
+    // Create subscription — first invoice picks up the above invoice item
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: prices.monthly }],
@@ -53,19 +54,19 @@ export async function POST(req: NextRequest) {
       payment_intent: Stripe.PaymentIntent | null;
     };
 
-    if (!invoice) {
-      return NextResponse.json({ error: "No invoice created" }, { status: 500 });
-    }
+    console.log("Invoice status:", invoice?.status);
+    console.log("Payment intent:", invoice?.payment_intent?.id);
+    console.log("Client secret exists:", !!invoice?.payment_intent?.client_secret);
 
-    const paymentIntent = invoice.payment_intent;
-
-    if (!paymentIntent?.client_secret) {
-      return NextResponse.json({ error: "No payment intent created" }, { status: 500 });
+    if (!invoice?.payment_intent?.client_secret) {
+      return NextResponse.json({
+        error: `No payment intent. Invoice status: ${invoice?.status}`,
+      }, { status: 500 });
     }
 
     return NextResponse.json({
       subscriptionId: subscription.id,
-      clientSecret: paymentIntent.client_secret,
+      clientSecret: invoice.payment_intent.client_secret,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
