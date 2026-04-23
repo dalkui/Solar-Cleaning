@@ -35,15 +35,17 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       line_items: [
         {
+          price: prices.firstClean,
+          quantity: 1,
+        },
+        {
           price: prices.monthly,
           quantity: 1,
         },
       ],
       subscription_data: {
         metadata: { plan },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        add_invoice_items: [{ price: prices.firstClean, quantity: 1 }],
-      } as any,
+      },
       success_url: `${origin}/success?plan=${plan}`,
       cancel_url: `${origin}/#pricing`,
       currency: "aud",
