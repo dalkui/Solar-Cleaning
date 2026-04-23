@@ -1,67 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const planPrices: Record<string, { firstClean: string; monthly: string; name: string }> = {
+const planPrices: Record<string, { firstClean: string; monthly: string }> = {
   basic: {
     firstClean: process.env.STRIPE_BASIC_FIRST_CLEAN!,
     monthly: process.env.STRIPE_BASIC_MONTHLY!,
-    name: "Basic Plan",
   },
   standard: {
     firstClean: process.env.STRIPE_STANDARD_FIRST_CLEAN!,
     monthly: process.env.STRIPE_STANDARD_MONTHLY!,
-    name: "Standard Plan",
   },
   elite: {
     firstClean: process.env.STRIPE_ELITE_FIRST_CLEAN!,
     monthly: process.env.STRIPE_ELITE_MONTHLY!,
-    name: "Elite Plan",
   },
 };
 
 export async function POST(req: NextRequest) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2026-03-25.dahlia",
-  });
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   try {
-    const { plan, email, name } = await req.json();
+    const { plan } = await req.json();
 
     const prices = planPrices[plan];
     if (!prices) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    // Create customer
-    const customer = await stripe.customers.create({ email, name });
+    const origin = req.headers.get("origin") || "http://localhost:3000";
 
-    // Add first clean as pending invoice item
-    await stripe.invoiceItems.create({
-      customer: customer.id,
-      pricing: { price: prices.firstClean },
+    const session = await stripe.checkout.sessions.create({
+      ui_mode: "elements",
+      mode: "subscription",
+      line_items: [
+        { price: prices.firstClean, quantity: 1 },
+        { price: prices.monthly, quantity: 1 },
+      ],
+      return_url: `${origin}/success?plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
     });
 
-    // Create subscription — first invoice picks up the above invoice item
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [{ price: prices.monthly }],
-      payment_behavior: "default_incomplete",
-      payment_settings: { save_default_payment_method: "on_subscription" },
-      expand: ["latest_invoice"],
-      metadata: { plan },
-    });
-
-    const invoice = subscription.latest_invoice as Stripe.Invoice;
-
-    if (!invoice?.confirmation_secret?.client_secret) {
-      return NextResponse.json({
-        error: `No client secret. Invoice status: ${invoice?.status}`,
-      }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      subscriptionId: subscription.id,
-      clientSecret: invoice.confirmation_secret.client_secret,
-    });
+    return NextResponse.json({ clientSecret: session.client_secret });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Stripe error:", message);
