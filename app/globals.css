@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+:root {
+  --bg:        #08101C;
+  --bg-alt:    #0C1828;
+  --bg-card:   #0F1E30;
+  --gold:      #F5C518;
+  --gold-dark: #D4A017;
+  --gold-glow: rgba(245, 197, 24, 0.15);
+  --border:    rgba(255, 255, 255, 0.07);
+  --text:      #EFF4FF;
+  --text-sub:  #7A95B0;
+  --text-muted:#3A5268;
+  --display:   var(--font-display, Georgia, serif);
+  --body:      var(--font-body, sans-serif);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography */
+.display { font-family: var(--display); font-weight: 400; line-height: 1.05; letter-spacing: -0.01em; }
+.label   { font-family: var(--body); font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+
+/* Gradient text */
+.g-text {
+  background: linear-gradient(135deg, #F5C518 0%, #F59300 60%, #F97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 8px;
+  padding: 14px 30px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-gold {
+  background: var(--gold);
+  color: #08101C;
+}
+.btn-gold:hover { background: #FFD640; box-shadow: 0 8px 28px rgba(245,197,24,0.3); transform: translateY(-1px); }
+
+.btn-outline {
+  border: 1.5px solid rgba(255,255,255,0.18);
+  color: var(--text-sub);
+}
+.btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+}
+
+/* Divider */
+.hr { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  /* Navbar */
+  .nav-links { display: none !important; }
+  .nav-hamburger { display: flex !important; }
+
+  /* Sections */
+  .section { padding: 64px 20px; }
+
+  /* Grids → single column */
+  .pricing-grid  { grid-template-columns: 1fr !important; }
+  .steps-grid    { grid-template-columns: 1fr 1fr !important; }
+  .pain-grid     { grid-template-columns: 1fr !important; }
+  .trust-grid    { grid-template-columns: 1fr 1fr !important; }
+  .footer-grid   { grid-template-columns: 1fr !important; gap: 32px !important; }
+  .area-grid     { grid-template-columns: 1fr 1fr !important; }
+  .why-header    { grid-template-columns: 1fr !important; gap: 32px !important; }
+
+  /* Hero */
+  .hero-content  { padding: 100px 20px 80px !important; }
+
+  /* Nav padding tweak */
+  nav { padding: 0 20px !important; }
+}
+
+@media (max-width: 480px) {
+  .steps-grid  { grid-template-columns: 1fr !important; }
+  .trust-grid  { grid-template-columns: 1fr 1fr !important; }
+  .area-grid   { grid-template-columns: 1fr !important; }
+  .pricing-selector-grid { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+/* Accordion animations */
+@theme inline {
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+
+/* FAQ Plus/X icon toggle */
+.faq-trigger[data-state="closed"] .faq-icon-plus { opacity: 1; transform: rotate(0deg); }
+.faq-trigger[data-state="closed"] .faq-icon-x    { opacity: 0; transform: rotate(-90deg); }
+.faq-trigger[data-state="open"]   .faq-icon-plus { opacity: 0; transform: rotate(90deg); }
+.faq-trigger[data-state="open"]   .faq-icon-x    { opacity: 1; transform: rotate(0deg); }
+
+/* FAQ item hover border */
+.faq-item { transition: border-color 0.2s; }
+.faq-item:hover { border-color: rgba(245, 197, 24, 0.25) !important; }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.6s ease forwards; }
+.delay-1 { animation-delay: 0.1s; opacity: 0; }
+.delay-2 { animation-delay: 0.2s; opacity: 0; }
+.delay-3 { animation-delay: 0.3s; opacity: 0; }
+.delay-4 { animation-delay: 0.4s; opacity: 0; }
