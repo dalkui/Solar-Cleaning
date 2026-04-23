@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
 const planPrices: Record<string, { firstClean: string; monthly: string; name: string }> = {
   basic: {
     firstClean: process.env.STRIPE_BASIC_FIRST_CLEAN!,
@@ -22,6 +20,7 @@ const planPrices: Record<string, { firstClean: string; monthly: string; name: st
 };
 
 export async function POST(req: NextRequest) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
   try {
     const { plan } = await req.json();
 
