@@ -140,7 +140,7 @@ function CheckoutInner() {
               </div>
             </div>
 
-            {["Cancel anytime after minimum term", "Serviced by A-Grade Electrician", "Email & SMS reminders", "SSL encrypted · Powered by Stripe"].map((f) => (
+            {["Cancel anytime after minimum term", "Email & SMS reminders", "SSL encrypted · Powered by Stripe"].map((f) => (
               <div key={f} style={{ display: "flex", gap: "8px", fontSize: "13px", color: "var(--text-muted)", marginBottom: "6px" }}>
                 <span style={{ color: "var(--gold)" }}>✓</span>{f}
               </div>
