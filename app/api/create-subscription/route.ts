@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (stripe.invoiceItems.create as any)({
       customer: customer.id,
-      price: prices.firstClean,
+      pricing: { price: prices.firstClean },
     });
 
     // Create subscription — first invoice will include the above invoice item
