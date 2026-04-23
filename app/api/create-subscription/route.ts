@@ -46,27 +46,21 @@ export async function POST(req: NextRequest) {
       items: [{ price: prices.monthly }],
       payment_behavior: "default_incomplete",
       payment_settings: { save_default_payment_method: "on_subscription" },
-      expand: ["latest_invoice.payment_intent"],
+      expand: ["latest_invoice"],
       metadata: { plan },
     });
 
-    const invoice = subscription.latest_invoice as Stripe.Invoice & {
-      payment_intent: Stripe.PaymentIntent | null;
-    };
+    const invoice = subscription.latest_invoice as Stripe.Invoice;
 
-    console.log("Invoice status:", invoice?.status);
-    console.log("Payment intent:", invoice?.payment_intent?.id);
-    console.log("Client secret exists:", !!invoice?.payment_intent?.client_secret);
-
-    if (!invoice?.payment_intent?.client_secret) {
+    if (!invoice?.confirmation_secret?.client_secret) {
       return NextResponse.json({
-        error: `No payment intent. Invoice status: ${invoice?.status}`,
+        error: `No client secret. Invoice status: ${invoice?.status}`,
       }, { status: 500 });
     }
 
     return NextResponse.json({
       subscriptionId: subscription.id,
-      clientSecret: invoice.payment_intent.client_secret,
+      clientSecret: invoice.confirmation_secret.client_secret,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
