@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { Resend } from "resend";
 import { sendSMS } from "@/lib/sms";
+import { renderEmail } from "@/lib/email-template";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -35,14 +36,17 @@ export async function GET() {
         from: "FluroSolar <noreply@flurosolar.com>",
         to: c.email,
         subject: `Reminder: your clean is tomorrow`,
-        html: `
-          <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
-            <h2 style="color:#F5C518;">See you tomorrow ☀️</h2>
-            <p>Hi ${c.name || "there"},</p>
-            <p>Just a reminder — your FluroSolar clean is booked for <strong>${timeLabel}</strong>${w ? ` with ${w.name}` : ""}.</p>
-            <p>You don't need to be home. If you need to reschedule, <a href="https://flurosolar.com/portal" style="color:#F5C518;">log in here</a>.</p>
-          </div>
-        `,
+        html: renderEmail({
+          preheader: `Tomorrow at ${timeLabel}${w ? ` with ${w.name}` : ""}`,
+          heading: "See you tomorrow ☀️",
+          intro: `Hi ${c.name || "there"} — just a quick reminder.`,
+          body: `
+            <p style="margin:0 0 14px;">Your FluroSolar clean is booked for <strong>${timeLabel}</strong>${w ? ` with <strong>${w.name}</strong>` : ""}.</p>
+            <p style="margin:0 0 14px;color:#7A95B0;">You don't need to be home. We'll send another message when ${w ? w.name.split(" ")[0] : "the worker"} arrives.</p>
+            <p style="margin:0;">Need to reschedule? You can do that from your portal.</p>
+          `,
+          cta: { label: "Manage booking →", href: "https://flurosolar.com/portal" },
+        }),
       }).catch(() => {});
       await supabase.from("customer_messages").insert({
         customer_id: c.id, direction: "outbound", channel: "email",

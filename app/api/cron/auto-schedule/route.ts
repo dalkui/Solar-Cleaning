@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { Resend } from "resend";
 import { sendSMS } from "@/lib/sms";
+import { renderEmail } from "@/lib/email-template";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -132,14 +133,20 @@ export async function GET() {
         from: "FluroSolar <noreply@flurosolar.com>",
         to: item.customer.email,
         subject: `Your clean is booked — ${label}`,
-        html: `
-          <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
-            <h2 style="color:#F5C518;">Your clean is scheduled</h2>
-            <p>Hi ${item.customer.name || "there"},</p>
-            <p>We've booked your solar panel clean for <strong>${label}</strong> with ${item.worker.name}.</p>
-            <p>Need to change this? <a href="https://flurosolar.com/portal" style="color:#F5C518;">Log in to your portal</a> to reschedule.</p>
-          </div>
-        `,
+        html: renderEmail({
+          preheader: `${label} with ${item.worker.name}`,
+          heading: "Your clean is scheduled",
+          intro: `Hi ${item.customer.name || "there"} — we've picked a time for your next clean.`,
+          body: `
+            <div style="background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:10px;padding:16px;margin:0 0 16px;">
+              <p style="margin:0 0 4px;font-size:13px;color:#7A95B0;">Booking</p>
+              <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#F5C518;">${label}</p>
+              <p style="margin:0;font-size:13px;color:#EFF4FF;">Your worker: <strong>${item.worker.name}</strong></p>
+            </div>
+            <p style="margin:0;color:#7A95B0;">Need to change this time? Log in to your portal and reschedule with one tap.</p>
+          `,
+          cta: { label: "Manage booking →", href: "https://flurosolar.com/portal" },
+        }),
       }).catch(() => {});
       await supabase.from("customer_messages").insert({
         customer_id: item.customer.id,

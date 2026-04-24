@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { verifyWorkerToken } from "@/lib/auth";
 import { Resend } from "resend";
 import { sendSMS } from "@/lib/sms";
+import { renderEmail } from "@/lib/email-template";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -96,17 +97,19 @@ export async function POST(req: NextRequest) {
       await resend.emails.send({
         from: "FluroSolar <noreply@flurosolar.com>",
         to: customer.email,
-        subject: "Your solar panels have been cleaned – FluroSolar",
-        html: `
-          <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
-            <h2 style="color:#F5C518;margin-bottom:8px;">Your panels are sparkling clean ☀️</h2>
-            <p style="color:#7A95B0;margin-bottom:24px;">Hi ${customer.name || "there"},</p>
-            <p style="margin-bottom:16px;">Your solar panels were cleaned today by ${session.name}. They're now running at peak efficiency.</p>
-            <p style="margin-bottom:24px;color:#7A95B0;">Your next scheduled clean is <strong style="color:#EFF4FF;">${nextClean}</strong>.</p>
-            <p style="margin-bottom:8px;">If you have any questions or concerns about today's service, simply reply to this email or contact us at fluroservices@gmail.com</p>
-            <p style="color:#3A5268;font-size:13px;margin-top:24px;">Thank you for being a FluroSolar customer.</p>
-          </div>
-        `,
+        subject: "Your solar panels have been cleaned ✨",
+        html: renderEmail({
+          preheader: `Cleaned today by ${session.name}. Next clean: ${nextClean}`,
+          heading: "Your panels are sparkling clean ✨",
+          intro: `Hi ${customer.name || "there"} — we've just finished up.`,
+          body: `
+            <p style="margin:0 0 14px;">Your solar panels were cleaned today by <strong>${session.name}</strong>. They're running at peak efficiency.</p>
+            <p style="margin:0 0 14px;color:#7A95B0;">Your next scheduled clean is <strong style="color:#EFF4FF;">${nextClean}</strong>. We'll email you closer to the date to confirm the time.</p>
+            <p style="margin:0;">Questions or concerns about today's service? Just reply to this email.</p>
+          `,
+          cta: { label: "View your portal →", href: "https://flurosolar.com/portal" },
+          footer: "Thank you for being a FluroSolar customer.",
+        }),
       }).catch(() => {});
     }
 

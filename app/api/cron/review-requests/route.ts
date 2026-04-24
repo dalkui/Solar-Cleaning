@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { Resend } from "resend";
 import { sendSMS } from "@/lib/sms";
+import { renderEmail } from "@/lib/email-template";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -42,15 +43,16 @@ export async function GET() {
         from: "FluroSolar <noreply@flurosolar.com>",
         to: c.email,
         subject: "How did we do?",
-        html: `
-          <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
-            <h2 style="color:#F5C518;">How did we do?</h2>
-            <p>Hi ${c.name || "there"},</p>
-            <p>Thanks again for being a FluroSolar customer. If you've got 30 seconds, we'd love a Google review — it really helps us grow.</p>
-            <a href="${reviewUrl}" style="display:inline-block;background:#F5C518;color:#08101C;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none;margin:16px 0;">Leave a review ★</a>
-            <p style="color:#3A5268;font-size:13px;">If there's anything we can improve, reply to this email and we'll fix it.</p>
-          </div>
-        `,
+        html: renderEmail({
+          preheader: "30 seconds to leave a Google review?",
+          heading: "How did we do? ⭐",
+          intro: `Hi ${c.name || "there"} — thanks again for being a FluroSolar customer.`,
+          body: `
+            <p style="margin:0 0 14px;">If you've got 30 seconds, a quick Google review genuinely makes our day — and helps local customers find us.</p>
+          `,
+          cta: { label: "Leave a review ★", href: reviewUrl },
+          footer: "Anything we could have done better? Reply and let us know — we read every message.",
+        }),
       }).catch(() => {});
       await supabase.from("customer_messages").insert({
         customer_id: c.id, direction: "outbound", channel: "email",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabase";
 import { Resend } from "resend";
+import { renderEmail } from "@/lib/email-template";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const resend = new Resend(process.env.RESEND_API_KEY!);
@@ -83,25 +84,26 @@ export async function POST(req: NextRequest) {
 
       // Welcome email
       if (customer.email) {
+        const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
         await resend.emails.send({
           from: "FluroSolar <noreply@flurosolar.com>",
           to: customer.email,
           subject: "Welcome to FluroSolar ☀️",
-          html: `
-            <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
-              <h2 style="color:#F5C518;">Welcome to FluroSolar</h2>
-              <p>Hi ${customer.name || "there"},</p>
-              <p>Thanks for subscribing to our ${plan} plan! We've received your details and you're all set.</p>
-              <p><strong>What happens next:</strong></p>
-              <ul style="line-height:1.8;">
-                <li>Your first clean is scheduled automatically — we'll email you when we pick a date</li>
-                <li>You can log in to your customer portal any time to see bookings, update your card, or reschedule</li>
-                <li>No password needed — just enter your email and we'll send you a one-tap login link</li>
+          html: renderEmail({
+            preheader: "Your subscription is active. Here's what happens next.",
+            heading: "Welcome to FluroSolar",
+            intro: `Hi ${customer.name || "there"} — you're all set up on the <strong>${planName}</strong> plan. Thanks for joining us.`,
+            body: `
+              <p style="margin:0 0 16px;font-weight:600;color:#F5C518;">What happens next</p>
+              <ul style="margin:0 0 16px;padding-left:20px;color:#EFF4FF;">
+                <li style="margin-bottom:8px;">Your first clean is scheduled automatically — we'll email you the date once we've picked a time</li>
+                <li style="margin-bottom:8px;">Log in to your portal any time to view bookings, update your card, or reschedule</li>
+                <li style="margin-bottom:8px;">No password — just enter your email and we'll send you a one-tap login link</li>
               </ul>
-              <a href="https://flurosolar.com/portal/login" style="display:inline-block;background:#F5C518;color:#08101C;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none;margin:20px 0;">Log in to your portal →</a>
-              <p style="color:#3A5268;font-size:13px;margin-top:24px;">Questions? Reply to this email or contact us at fluroservices@gmail.com</p>
-            </div>
-          `,
+              <p style="margin:0;color:#7A95B0;">You can log in using the button below:</p>
+            `,
+            cta: { label: "Log in to your portal →", href: "https://flurosolar.com/portal/login" },
+          }),
         }).catch(() => {});
       }
     }
@@ -123,16 +125,16 @@ export async function POST(req: NextRequest) {
           from: "FluroSolar <noreply@flurosolar.com>",
           to: customer.email,
           subject: "Payment failed — please update your card",
-          html: `
-            <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
-              <h2 style="color:#F5C518;">Payment issue</h2>
-              <p>Hi ${customer.name || "there"},</p>
-              <p>Your recent FluroSolar subscription payment didn't go through. This is usually an expired card or bank issue.</p>
-              <p>Please update your payment method to keep your cleans scheduled:</p>
-              <a href="https://flurosolar.com/portal" style="display:inline-block;background:#F5C518;color:#08101C;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;margin:16px 0;">Update Card →</a>
-              <p style="color:#3A5268;font-size:13px;">Stripe will automatically retry over the next few days. If you need help, reply to this email.</p>
-            </div>
-          `,
+          html: renderEmail({
+            preheader: "Your last payment didn't go through — update your card to keep your cleans.",
+            heading: "We couldn't process your payment",
+            intro: `Hi ${customer.name || "there"} — your recent FluroSolar payment didn't go through.`,
+            body: `
+              <p style="margin:0 0 12px;">This is usually an expired card or a bank hold. No rush — we'll retry automatically, but the quickest fix is to update your card now.</p>
+            `,
+            cta: { label: "Update payment method →", href: "https://flurosolar.com/portal/account" },
+            footer: "We'll retry over the next few days. Reply if you need help.",
+          }),
         }).catch(() => {});
       }
     }

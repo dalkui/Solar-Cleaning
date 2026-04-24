@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { Resend } from "resend";
 import { randomBytes } from "crypto";
+import { renderEmail } from "@/lib/email-template";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -34,15 +35,14 @@ export async function POST(req: NextRequest) {
     from: "FluroSolar <noreply@flurosolar.com>",
     to: customer.email,
     subject: "Your FluroSolar login link",
-    html: `
-      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
-        <h2 style="color:#F5C518;">Log in to your account</h2>
-        <p>Hi ${customer.name || "there"},</p>
-        <p>Tap the button below to log in to your FluroSolar account. This link expires in 1 hour.</p>
-        <a href="${link}" style="display:inline-block;background:#F5C518;color:#08101C;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none;margin:16px 0;">Log in →</a>
-        <p style="color:#3A5268;font-size:13px;">Didn't request this? You can ignore this email.</p>
-      </div>
-    `,
+    html: renderEmail({
+      preheader: "Tap to log in. Expires in 1 hour.",
+      heading: "Log in to your account",
+      intro: `Hi ${customer.name || "there"} — here's your one-tap login link.`,
+      body: `<p style="margin:0;color:#7A95B0;">This link will log you in instantly. No password needed.</p>`,
+      cta: { label: "Log in →", href: link },
+      footer: "This link expires in 1 hour. Didn't request this? Safe to ignore.",
+    }),
   }).catch(() => {});
 
   await supabase.from("customer_messages").insert({
