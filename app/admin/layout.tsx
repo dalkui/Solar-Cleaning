@@ -4,10 +4,12 @@ import { usePathname, useRouter } from "next/navigation";
 const navItems = [
   { label: "Dashboard", href: "/admin" },
   { label: "Calendar", href: "/admin/calendar" },
+  { label: "Live View", href: "/admin/live" },
   { label: "Customers", href: "/admin/customers" },
+  { label: "Workers", href: "/admin/workers" },
   { label: "Upcoming Jobs", href: "/admin/jobs" },
   { label: "Settings", href: "/admin/settings" },
-  { label: "Worker Schedule ↗", href: "/schedule" },
+  { label: "Worker Portal ↗", href: "/worker" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const COOKIE_NAME = "admin_token";
+const ADMIN_COOKIE = "admin_token";
+const WORKER_COOKIE = "worker_token";
 const secret = () => new TextEncoder().encode(process.env.ADMIN_JWT_SECRET!);
 
 export async function signAdminToken() {
@@ -22,9 +23,32 @@ export async function verifyAdminToken(token: string) {
 
 export async function getAdminSession() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token = cookieStore.get(ADMIN_COOKIE)?.value;
   if (!token) return false;
   return verifyAdminToken(token);
 }
 
-export { COOKIE_NAME };
+export async function signWorkerToken(workerId: string, name: string) {
+  return new SignJWT({ workerId, name })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("12h")
+    .sign(secret());
+}
+
+export async function verifyWorkerToken(token: string): Promise<{ workerId: string; name: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    return { workerId: payload.workerId as string, name: payload.name as string };
+  } catch {
+    return null;
+  }
+}
+
+export async function getWorkerSession() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(WORKER_COOKIE)?.value;
+  if (!token) return null;
+  return verifyWorkerToken(token);
+}
+
+export { ADMIN_COOKIE as COOKIE_NAME, WORKER_COOKIE };
