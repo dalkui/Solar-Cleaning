@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   Sun, SunMedium, Moon, Calendar, Clock, MapPin, Phone,
   CheckCircle, Bell, CreditCard, Star, Sparkles, Zap,
-  AlertTriangle, ArrowRight, LogOut, ChevronRight, XCircle,
+  AlertTriangle, ArrowRight, LogOut, ChevronRight, ChevronDown, XCircle,
 } from "lucide-react";
 import { Card } from "@/components/portal/Card";
 import { Badge } from "@/components/portal/Badge";
@@ -85,6 +85,7 @@ export default function PortalHome() {
   const [reschedDate, setReschedDate] = useState("");
   const [reschedNote, setReschedNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
 
   const load = async () => {
     const r = await fetch("/api/portal/me");
@@ -293,27 +294,69 @@ export default function PortalHome() {
         </Card>
       </section>
 
-      {/* Recent activity */}
+      {/* Recent activity — collapsible */}
       {messages.length > 0 && (
         <section style={{ marginBottom: "20px" }}>
-          <SectionHeader>Recent Activity</SectionHeader>
-          <Card padding="4px 0">
-            {messages.slice(0, 5).map((m, i) => (
-              <div key={m.id} style={{ padding: "12px 18px", borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "rgba(245,197,24,0.08)", color: "#F5C518", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {purposeIcon(m.purpose)}
+          <Card padding="0">
+            <button
+              onClick={() => setActivityOpen(o => !o)}
+              aria-expanded={activityOpen}
+              className="portal-btn portal-focus"
+              style={{
+                width: "100%",
+                padding: "16px 18px",
+                background: "transparent",
+                border: "none",
+                color: "#EFF4FF",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                cursor: "pointer",
+                textAlign: "left",
+                fontFamily: "inherit",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "rgba(245,197,24,0.08)", color: "#F5C518", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Bell size={14} />
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
-                    <p style={{ fontSize: "13px", fontWeight: 600, color: "#EFF4FF", textTransform: "capitalize" }}>{(m.subject || m.purpose).replace(/_/g, " ")}</p>
-                    <span style={{ fontSize: "11px", color: "#7A95B0", whiteSpace: "nowrap" }}>{relativeTime(m.created_at)}</span>
-                  </div>
-                  <p style={{ fontSize: "12px", color: "#7A95B0", lineHeight: 1.4, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
-                    {m.body}
+                <div>
+                  <p style={{ fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#EFF4FF" }}>Recent Activity</p>
+                  <p style={{ fontSize: "11px", color: "#7A95B0", marginTop: "1px" }}>
+                    {messages.length} notification{messages.length === 1 ? "" : "s"}
                   </p>
                 </div>
               </div>
-            ))}
+              <ChevronDown
+                size={18}
+                color="#7A95B0"
+                style={{
+                  transition: "transform 0.2s",
+                  transform: activityOpen ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              />
+            </button>
+
+            {activityOpen && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                {messages.slice(0, 10).map((m, i) => (
+                  <div key={m.id} style={{ padding: "12px 18px", borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "flex-start", gap: "12px", animation: "fadeIn 0.2s ease-out" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "rgba(245,197,24,0.08)", color: "#F5C518", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {purposeIcon(m.purpose)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
+                        <p style={{ fontSize: "13px", fontWeight: 600, color: "#EFF4FF", textTransform: "capitalize" }}>{(m.subject || m.purpose).replace(/_/g, " ")}</p>
+                        <span style={{ fontSize: "11px", color: "#7A95B0", whiteSpace: "nowrap" }}>{relativeTime(m.created_at)}</span>
+                      </div>
+                      <p style={{ fontSize: "12px", color: "#7A95B0", lineHeight: 1.4, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                        {m.body}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
         </section>
       )}
