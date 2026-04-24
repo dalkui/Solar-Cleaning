@@ -93,7 +93,7 @@ function UpdateCardForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
             },
             invalid: { color: "#f87171" },
           },
-          hidePostalCode: false,
+          hidePostalCode: true,
         }} />
       </div>
       {error && <p style={{ color: "#f87171", fontSize: "13px", marginBottom: "12px" }}>{error}</p>}
