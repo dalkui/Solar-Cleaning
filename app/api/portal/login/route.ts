@@ -31,19 +31,21 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") || "https://flurosolar.com";
   const link = `${origin}/api/portal/verify?token=${token}`;
 
+  const timeLabel = new Date().toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Australia/Sydney" });
+
   const emailOpts = {
     preheader: "Tap to log in. Expires in 1 hour.",
     heading: "Log in to your account",
     intro: `Hi ${customer.name || "there"} — here's your one-tap login link.`,
     body: `<p style="margin:0;color:#7A95B0;">This link will log you in instantly. No password needed.</p>`,
     cta: { label: "Log in to FluroSolar", href: link },
-    footer: "This link expires in 1 hour. Didn't request this? You can safely ignore this email.",
+    footer: `Requested ${timeLabel}. This link expires in 1 hour. Didn't request this? You can safely ignore this email.`,
   };
 
   const sendResult = await resend.emails.send({
     from: "FluroSolar <noreply@flurosolar.com>",
     to: customer.email,
-    subject: "Your FluroSolar login link",
+    subject: `FluroSolar login link · ${timeLabel}`,
     html: renderEmail(emailOpts),
     text: renderEmailText(emailOpts),
   });
