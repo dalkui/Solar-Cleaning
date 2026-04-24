@@ -13,10 +13,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
 
   const { data: jobs } = await supabase
-    .from("job_notes")
+    .from("bookings")
     .select("*")
     .eq("customer_id", id)
-    .order("scheduled_date", { ascending: false });
+    .order("scheduled_at", { ascending: false });
 
   return NextResponse.json({ customer, jobs: jobs || [] });
 }
