@@ -18,6 +18,52 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
+/* Portal animations */
+@keyframes skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes checkSweep {
+  0% { stroke-dashoffset: 60; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.portal-fade-in { animation: fadeIn 0.2s ease-out; }
+.portal-pop-in { animation: popIn 0.2s ease-out; }
+
+/* Portal card hover (desktop only) */
+@media (hover: hover) {
+  .portal-card-hover:hover {
+    border-color: rgba(245,197,24,0.25) !important;
+    transform: translateY(-1px);
+  }
+}
+
+/* Button press feedback */
+.portal-btn { transition: transform 0.1s; }
+.portal-btn:active { transform: scale(0.98); }
+
+/* Focus */
+.portal-focus:focus-visible {
+  outline: 2px solid #F5C518;
+  outline-offset: 2px;
+}
+
+/* Tabular numbers in stats */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
 body {
   background: var(--bg);
   color: var(--text);

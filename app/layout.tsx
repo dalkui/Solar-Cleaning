@@ -17,6 +17,13 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "FluroSolarCleaning — Solar Panel Cleaning Subscriptions",
   description: "Serviced by a certified A-Grade Electrician. Keep your solar panels at peak efficiency with a set-and-forget subscription.",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-64.png", sizes: "64x64", type: "image/png" },
+    ],
+    apple: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({
