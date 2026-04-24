@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     if (customer?.email) {
       const nextClean = getNextCleanDateLabel(customer.plan);
       await resend.emails.send({
-        from: "FluroSolar <noreply@flurosolar.com.au>",
+        from: "FluroSolar <noreply@flurosolar.com>",
         to: customer.email,
         subject: "Your solar panels have been cleaned – FluroSolar",
         html: `
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
     }
 
     await resend.emails.send({
-      from: "FluroSolar <noreply@flurosolar.com.au>",
+      from: "FluroSolar <noreply@flurosolar.com>",
       to: "fluroservices@gmail.com",
       subject: `Job completed – ${customer?.name}`,
       html: `<p>${session.name} marked the job for <strong>${customer?.name}</strong> as completed.</p>`,

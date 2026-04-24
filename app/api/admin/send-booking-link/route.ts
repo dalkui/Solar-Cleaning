@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
 
   if (tokenErr) return NextResponse.json({ error: tokenErr.message }, { status: 500 });
 
-  const origin = req.headers.get("origin") || "https://flurosolar.com.au";
+  const origin = req.headers.get("origin") || "https://flurosolar.com";
   const bookingUrl = `${origin}/book/confirm?token=${token}`;
 
   await resend.emails.send({
-    from: "FluroSolar <noreply@flurosolar.com.au>",
+    from: "FluroSolar <noreply@flurosolar.com>",
     to: customer.email,
     subject: "Book your solar panel clean — FluroSolar",
     html: `

@@ -23,7 +23,7 @@ async function notifyWorkerAssignment(workerId: string, bookingId: string, reass
     ? `Job reassigned to you – ${dateLabel}`
     : `New job assigned – ${dateLabel}`;
   await resend.emails.send({
-    from: "FluroSolar <noreply@flurosolar.com.au>",
+    from: "FluroSolar <noreply@flurosolar.com>",
     to: worker.email,
     subject,
     html: `
@@ -34,7 +34,7 @@ async function notifyWorkerAssignment(workerId: string, bookingId: string, reass
         <p style="margin-top:12px;">Phone: ${c?.phone || "—"}</p>
         <p style="margin-top:12px;">${c?.panels || "—"} panels · ${c?.stories || "—"} storey · ${c?.plan || "—"} plan</p>
         ${c?.notes ? `<p style="margin-top:12px;color:#7A95B0;">Notes: ${c.notes}</p>` : ""}
-        <a href="https://flurosolar.com.au/worker" style="display:inline-block;margin-top:20px;background:#F5C518;color:#08101C;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;">Open Worker Portal →</a>
+        <a href="https://flurosolar.com/worker" style="display:inline-block;margin-top:20px;background:#F5C518;color:#08101C;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;">Open Worker Portal →</a>
       </div>
     `,
   }).catch(() => {});

@@ -67,7 +67,7 @@ export async function GET() {
   ).join("");
 
   await resend.emails.send({
-    from: "FluroSolar <noreply@flurosolar.com.au>",
+    from: "FluroSolar <noreply@flurosolar.com>",
     to: "fluroservices@gmail.com",
     subject: `Daily summary – ${dateStr}`,
     html: `
