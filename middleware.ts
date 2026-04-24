@@ -8,7 +8,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname === "/admin/login") return NextResponse.next();
 
-  if (pathname.startsWith("/admin")) {
+  if (pathname.startsWith("/admin") || pathname.startsWith("/schedule")) {
     const token = request.cookies.get("admin_token")?.value;
     if (!token) return NextResponse.redirect(new URL("/admin/login", request.url));
 
@@ -24,5 +24,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/schedule/:path*", "/schedule"],
 };

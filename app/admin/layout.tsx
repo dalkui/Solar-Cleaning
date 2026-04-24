@@ -7,6 +7,7 @@ const navItems = [
   { label: "Customers", href: "/admin/customers" },
   { label: "Upcoming Jobs", href: "/admin/jobs" },
   { label: "Settings", href: "/admin/settings" },
+  { label: "Worker Schedule ↗", href: "/schedule" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
