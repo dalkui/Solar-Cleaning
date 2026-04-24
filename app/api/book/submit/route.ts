@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   await supabase.from("booking_tokens").update({ used: true }).eq("token", token);
 
   await resend.emails.send({
-    from: "FluroSolar <noreply@flurosolar.com>",
+    from: "FluroSolar <noreply@flurosolar.com.au>",
     to: c.email,
     subject: `Booking confirmed — ${formattedTime}`,
     html: `
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   });
 
   await resend.emails.send({
-    from: "FluroSolar <noreply@flurosolar.com>",
+    from: "FluroSolar <noreply@flurosolar.com.au>",
     to: process.env.ADMIN_EMAIL!,
     subject: `New booking — ${c.name} — ${formattedTime}`,
     html: `

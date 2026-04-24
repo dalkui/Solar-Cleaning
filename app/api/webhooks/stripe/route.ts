@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       .eq("stripe_subscription_id", sub.id);
 
     await resend.emails.send({
-      from: "FluroSolar Admin <noreply@flurosolar.com>",
+      from: "FluroSolar Admin <noreply@flurosolar.com.au>",
       to: process.env.ADMIN_EMAIL!,
       subject: `Cancellation: ${meta.name || "A customer"} cancelled their ${meta.plan || ""} plan`,
       html: `
