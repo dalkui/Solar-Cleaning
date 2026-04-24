@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   });
 
   const origin = req.headers.get("origin") || "https://flurosolar.com";
-  const link = `${origin}/portal/verify?token=${token}`;
+  const link = `${origin}/api/portal/verify?token=${token}`;
 
   await resend.emails.send({
     from: "FluroSolar <noreply@flurosolar.com>",

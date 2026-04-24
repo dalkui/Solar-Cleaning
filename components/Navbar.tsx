@@ -87,6 +87,13 @@ export default function Navbar() {
             )}
           </div>
 
+          <a href="/portal/login"
+            style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-sub)", textDecoration: "none", fontFamily: "var(--body)", transition: "color 0.15s" }}
+            onMouseOver={(e) => (e.currentTarget.style.color = "var(--text)")}
+            onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-sub)")}>
+            Log In
+          </a>
+
           <a href="/contact" className="btn btn-gold" style={{ fontSize: "13px", padding: "10px 22px" }}>
             Get Started
           </a>
@@ -108,7 +115,7 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div style={{ background: "rgba(8,16,28,0.98)", borderTop: "1px solid var(--border)", padding: "20px 40px 24px" }}>
-          {[...mainLinks, ...moreLinks].map((l) => (
+          {[...mainLinks, ...moreLinks, { label: "Log In", href: "/portal/login" }].map((l) => (
             <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}
               style={{ display: "block", padding: "12px 0", fontSize: "16px", fontWeight: 500, color: "var(--text-sub)", borderBottom: "1px solid var(--border)", textDecoration: "none" }}>
               {l.label}

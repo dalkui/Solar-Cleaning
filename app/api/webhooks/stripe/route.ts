@@ -80,6 +80,30 @@ export async function POST(req: NextRequest) {
           scheduled_at: null,
         });
       }
+
+      // Welcome email
+      if (customer.email) {
+        await resend.emails.send({
+          from: "FluroSolar <noreply@flurosolar.com>",
+          to: customer.email,
+          subject: "Welcome to FluroSolar ☀️",
+          html: `
+            <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#08101C;color:#EFF4FF;padding:40px;border-radius:12px;">
+              <h2 style="color:#F5C518;">Welcome to FluroSolar</h2>
+              <p>Hi ${customer.name || "there"},</p>
+              <p>Thanks for subscribing to our ${plan} plan! We've received your details and you're all set.</p>
+              <p><strong>What happens next:</strong></p>
+              <ul style="line-height:1.8;">
+                <li>Your first clean is scheduled automatically — we'll email you when we pick a date</li>
+                <li>You can log in to your customer portal any time to see bookings, update your card, or reschedule</li>
+                <li>No password needed — just enter your email and we'll send you a one-tap login link</li>
+              </ul>
+              <a href="https://flurosolar.com/portal/login" style="display:inline-block;background:#F5C518;color:#08101C;font-weight:700;padding:14px 28px;border-radius:8px;text-decoration:none;margin:20px 0;">Log in to your portal →</a>
+              <p style="color:#3A5268;font-size:13px;margin-top:24px;">Questions? Reply to this email or contact us at fluroservices@gmail.com</p>
+            </div>
+          `,
+        }).catch(() => {});
+      }
     }
   }
 
