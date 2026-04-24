@@ -35,55 +35,58 @@ const statusText: Record<string, string> = {
   pending: "#94a3b8",
 };
 
-function getWeekDays(offset: number): Date[] {
-  const now = new Date();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + offset * 7);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return d;
-  });
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+function getMonthDays(year: number, month: number): (Date | null)[] {
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days: (Date | null)[] = [];
+  for (let i = 0; i < firstDay; i++) days.push(null);
+  for (let d = 1; d <= daysInMonth; d++) days.push(new Date(year, month, d));
+  return days;
 }
 
 export default function CalendarPage() {
-  const [weekOffset, setWeekOffset] = useState(0);
+  const now = new Date();
+  const [monthOffset, setMonthOffset] = useState(0);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selected, setSelected] = useState<Booking | null>(null);
 
-  const days = getWeekDays(weekOffset);
-  const from = days[0].toISOString();
-  const to = new Date(days[6].getTime() + 86400000).toISOString();
+  const displayDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
+  const days = getMonthDays(year, month);
+
+  const from = new Date(year, month, 1).toISOString();
+  const to = new Date(year, month + 1, 1).toISOString();
 
   useEffect(() => {
     fetch(`/api/admin/bookings?from=${from}&to=${to}`)
       .then((r) => r.json())
       .then((d) => setBookings(Array.isArray(d) ? d : []));
-  }, [weekOffset]);
+  }, [monthOffset]);
 
   const bookingsForDay = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = date.toLocaleDateString("en-CA");
     return bookings.filter((b) => b.scheduled_at.startsWith(dateStr));
   };
-
-  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-        <h1 className="display" style={{ fontSize: "32px" }}>Calendar</h1>
+        <h1 className="display" style={{ fontSize: "32px" }}>
+          {MONTH_NAMES[month]} {year}
+        </h1>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <button onClick={() => setWeekOffset(w => w - 1)} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 16px", color: "var(--text)", cursor: "pointer" }}>←</button>
-          <span style={{ fontSize: "14px", color: "var(--text-muted)", minWidth: "160px", textAlign: "center" }}>
-            {days[0].toLocaleDateString("en-AU", { day: "numeric", month: "short" })} — {days[6].toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
-          </span>
-          <button onClick={() => setWeekOffset(w => w + 1)} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 16px", color: "var(--text)", cursor: "pointer" }}>→</button>
-          <button onClick={() => setWeekOffset(0)} style={{ background: "transparent", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 16px", color: "var(--text-muted)", cursor: "pointer", fontSize: "13px" }}>Today</button>
+          <button onClick={() => setMonthOffset(m => m - 1)} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 16px", color: "var(--text)", cursor: "pointer" }}>←</button>
+          <button onClick={() => setMonthOffset(0)} style={{ background: "transparent", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 16px", color: "var(--text-muted)", cursor: "pointer", fontSize: "13px" }}>Today</button>
+          <button onClick={() => setMonthOffset(m => m + 1)} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 16px", color: "var(--text)", cursor: "pointer" }}>→</button>
         </div>
       </div>
 
       {/* Legend */}
-      <div style={{ display: "flex", gap: "16px", marginBottom: "20px" }}>
+      <div style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
         {Object.entries(statusText).map(([status, color]) => (
           <div key={status} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--text-muted)" }}>
             <div style={{ width: "10px", height: "10px", borderRadius: "2px", background: color }} />
@@ -92,51 +95,66 @@ export default function CalendarPage() {
         ))}
       </div>
 
-      {/* Week grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
+      {/* Day headers */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", marginBottom: "4px" }}>
+        {DAY_NAMES.map((d) => (
+          <div key={d} style={{ textAlign: "center", fontSize: "12px", fontWeight: 600, color: "var(--text-muted)", padding: "8px 0", letterSpacing: "0.05em" }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Month grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
         {days.map((day, i) => {
-          const isToday = day.toDateString() === new Date().toDateString();
+          if (!day) return <div key={`empty-${i}`} />;
+          const isToday = day.toDateString() === now.toDateString();
           const dayBookings = bookingsForDay(day);
           return (
-            <div key={i}>
-              <div style={{ textAlign: "center", marginBottom: "8px" }}>
-                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "2px" }}>{dayNames[i]}</p>
-                <p style={{ fontSize: "18px", fontWeight: isToday ? 700 : 400, color: isToday ? "var(--gold)" : "var(--text)" }}>{day.getDate()}</p>
-              </div>
-              <div style={{ background: "var(--bg-card)", border: `1px solid ${isToday ? "rgba(245,197,24,0.3)" : "var(--border)"}`, borderRadius: "10px", minHeight: "120px", padding: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                {dayBookings.length === 0 ? (
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", marginTop: "16px" }}>—</p>
-                ) : (
-                  dayBookings.map((b) => (
-                    <button
-                      key={b.id}
-                      onClick={() => setSelected(b)}
-                      style={{
-                        background: statusColors[b.status],
-                        border: `1px solid ${statusBorder[b.status]}`,
-                        borderRadius: "6px",
-                        padding: "6px 8px",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        width: "100%",
-                      }}
-                    >
-                      <p style={{ fontSize: "11px", fontWeight: 600, color: statusText[b.status] }}>
-                        {new Date(b.scheduled_at).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true })}
-                      </p>
-                      <p style={{ fontSize: "11px", color: "var(--text-sub)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {b.customers?.name || "Unknown"}
-                      </p>
-                    </button>
-                  ))
-                )}
+            <div
+              key={i}
+              style={{
+                background: "var(--bg-card)",
+                border: `1px solid ${isToday ? "rgba(245,197,24,0.4)" : "var(--border)"}`,
+                borderRadius: "8px",
+                minHeight: "90px",
+                padding: "6px",
+              }}
+            >
+              <p style={{
+                fontSize: "13px",
+                fontWeight: isToday ? 700 : 400,
+                color: isToday ? "var(--gold)" : "var(--text-muted)",
+                marginBottom: "4px",
+                textAlign: "right",
+              }}>
+                {day.getDate()}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                {dayBookings.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => setSelected(b)}
+                    style={{
+                      background: statusColors[b.status],
+                      border: `1px solid ${statusBorder[b.status]}`,
+                      borderRadius: "4px",
+                      padding: "3px 6px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                  >
+                    <p style={{ fontSize: "10px", fontWeight: 600, color: statusText[b.status], whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {new Date(b.scheduled_at).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true })} {b.customers?.name?.split(" ")[0]}
+                    </p>
+                  </button>
+                ))}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Booking detail panel */}
+      {/* Booking detail modal */}
       {selected && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }} onClick={() => setSelected(null)}>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "14px", padding: "32px", maxWidth: "440px", width: "90%" }} onClick={(e) => e.stopPropagation()}>
