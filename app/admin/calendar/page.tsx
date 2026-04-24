@@ -913,6 +913,46 @@ export default function CalendarPage() {
                 </a>
               )}
             </div>
+
+            {/* Remove from calendar */}
+            <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid var(--border)", display: "flex", gap: "8px" }}>
+              <button
+                onClick={async () => {
+                  if (!confirm("Remove this booking from the calendar? The customer will go back to the unscheduled list.")) return;
+                  const prev = bookings;
+                  setBookings(bs => bs.filter(b => b.id !== selected.id));
+                  setSelected(null);
+                  const res = await fetch(`/api/admin/bookings/${selected.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ scheduled_at: null, worker_id: null, status: "pending" }),
+                  });
+                  if (!res.ok) { setBookings(prev); showToast("Failed to remove", "err"); }
+                  else { showToast("Removed from calendar"); fetchCalendar(); }
+                }}
+                style={{ flex: 1, padding: "10px", background: "transparent", color: "#f87171", border: "1px solid rgba(248,113,113,0.3)", borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              >
+                Unschedule
+              </button>
+              <button
+                onClick={async () => {
+                  if (!confirm("Cancel this booking permanently? This removes it entirely — the customer won't reappear in the unscheduled list.")) return;
+                  const prev = bookings;
+                  setBookings(bs => bs.filter(b => b.id !== selected.id));
+                  setSelected(null);
+                  const res = await fetch(`/api/admin/bookings/${selected.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: "cancelled" }),
+                  });
+                  if (!res.ok) { setBookings(prev); showToast("Failed to cancel", "err"); }
+                  else { showToast("Booking cancelled"); fetchCalendar(); }
+                }}
+                style={{ flex: 1, padding: "10px", background: "rgba(248,113,113,0.08)", color: "#f87171", border: "1px solid rgba(248,113,113,0.3)", borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+              >
+                Cancel Booking
+              </button>
+            </div>
           </div>
         </div>
       )}
