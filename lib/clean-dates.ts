@@ -4,6 +4,10 @@ const planIntervalMonths: Record<string, number> = {
   elite: 3,
 };
 
+export function planMonths(plan: string): number {
+  return planIntervalMonths[plan] ?? 12;
+}
+
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
   d.setMonth(d.getMonth() + months);

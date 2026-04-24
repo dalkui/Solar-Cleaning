@@ -130,7 +130,13 @@ export default function CalendarPage() {
   const [unavailableDates, setUnavailableDates] = useState<UnavailableDate[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [unscheduled, setUnscheduled] = useState<UnscheduledItem[]>([]);
-  const [dueFilter, setDueFilter] = useState<DueFilter>("this_month");
+  const [dueFilter, setDueFilter] = useState<DueFilter>(() => {
+    if (typeof window === "undefined") return "this_month";
+    const params = new URLSearchParams(window.location.search);
+    const f = params.get("filter");
+    if (f === "overdue" || f === "this_month" || f === "next_month" || f === "later" || f === "all") return f;
+    return "this_month";
+  });
 
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);

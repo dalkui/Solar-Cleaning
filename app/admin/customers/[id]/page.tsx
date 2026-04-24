@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, use } from "react";
-import { getNextCleanDates } from "@/lib/clean-dates";
+import { planMonths } from "@/lib/clean-dates";
 import { formatDateTime } from "@/lib/slots";
 
 interface Customer {
@@ -12,7 +12,8 @@ interface Customer {
 }
 
 interface Booking {
-  id: string; scheduled_at: string; status: string; created_at: string; worker_id?: string | null;
+  id: string; scheduled_at: string | null; status: string; created_at: string; worker_id?: string | null; due_month?: string | null;
+  workers?: { id: string; name: string; color: string } | null;
 }
 
 interface Worker { id: string; name: string; color: string; }
@@ -168,11 +169,79 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
 
   if (!customer) return <p style={{ color: "var(--text-muted)" }}>Loading…</p>;
 
-  const nextDates = getNextCleanDates(new Date(customer.subscribed_at), customer.plan, 4);
   const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(`${customer.street}, ${customer.suburb} ${customer.postcode} ${customer.state}`)}`;
 
   const confirmedBookings = bookings.filter((b) => (b.status === "confirmed" || b.status === "in_progress") && b.scheduled_at);
   const completedBookings = bookings.filter((b) => b.status === "completed");
+
+  // Build forecast timeline dots
+  interface ForecastDot {
+    key: string;
+    date: Date;
+    type: "completed" | "scheduled" | "pending" | "projected";
+    label: string;
+    workerName?: string;
+    bookingId?: string;
+  }
+
+  const dots: ForecastDot[] = [];
+  const takenMonths = new Set<string>();
+  const monthOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+  bookings.forEach(b => {
+    if (b.status === "cancelled") return;
+    if (b.status === "completed" && b.scheduled_at) {
+      const d = new Date(b.scheduled_at);
+      takenMonths.add(monthOf(d));
+      dots.push({ key: b.id, date: d, type: "completed", label: d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }), workerName: b.workers?.name, bookingId: b.id });
+    } else if ((b.status === "confirmed" || b.status === "in_progress") && b.scheduled_at) {
+      const d = new Date(b.scheduled_at);
+      takenMonths.add(monthOf(d));
+      dots.push({ key: b.id, date: d, type: "scheduled", label: d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }), workerName: b.workers?.name, bookingId: b.id });
+    } else if (b.status === "pending" && b.due_month) {
+      const d = new Date(b.due_month + "T00:00:00");
+      takenMonths.add(monthOf(d));
+      dots.push({ key: b.id, date: d, type: "pending", label: `Due ${d.toLocaleDateString("en-AU", { month: "short", year: "numeric" })}`, bookingId: b.id });
+    }
+  });
+
+  // Projected: extend from latest known booking by plan interval
+  const latestBookingDate = dots.length > 0
+    ? dots.reduce((max, d) => d.date > max ? d.date : max, dots[0].date)
+    : new Date(customer.subscribed_at);
+  const interval = planMonths(customer.plan);
+  const cursor = new Date(latestBookingDate);
+  cursor.setMonth(cursor.getMonth() + interval);
+  while (dots.length < 8) {
+    const key = monthOf(cursor);
+    if (!takenMonths.has(key)) {
+      dots.push({
+        key: `proj-${key}`,
+        date: new Date(cursor),
+        type: "projected",
+        label: cursor.toLocaleDateString("en-AU", { month: "short", year: "numeric" }),
+      });
+      takenMonths.add(key);
+    }
+    cursor.setMonth(cursor.getMonth() + interval);
+    if (dots.length > 50) break; // safety
+  }
+
+  dots.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  const now = new Date();
+  const dotColor = (type: ForecastDot["type"]) => ({
+    completed: "#4ade80",
+    scheduled: "#F5C518",
+    pending: "#94a3b8",
+    projected: "transparent",
+  }[type]);
+  const dotBorder = (type: ForecastDot["type"]) => ({
+    completed: "#4ade80",
+    scheduled: "#F5C518",
+    pending: "#94a3b8",
+    projected: "rgba(255,255,255,0.2)",
+  }[type]);
 
   return (
     <div>
@@ -211,9 +280,9 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "24px" }}>
-          <p className="label" style={{ marginBottom: "16px" }}>Details</p>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "24px", marginBottom: "16px" }}>
+        <p className="label" style={{ marginBottom: "16px" }}>Details</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "8px 32px" }}>
           {[
             ["Email", customer.email],
             ["Phone", customer.phone],
@@ -223,23 +292,78 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
             ["Panels", customer.panels],
             ["Subscribed", new Date(customer.subscribed_at).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })],
           ].map(([label, value]) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "10px" }}>
+            <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", padding: "6px 0" }}>
               <span style={{ color: "var(--text-muted)" }}>{label}</span>
               <span style={{ fontWeight: 500, textAlign: "right", maxWidth: "60%" }}>{value || "—"}</span>
             </div>
           ))}
         </div>
+      </div>
 
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "24px" }}>
-          <p className="label" style={{ marginBottom: "16px" }}>Next Due Cleans</p>
-          {nextDates.map((d, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "10px" }}>
-              <span style={{ color: "var(--text-muted)" }}>Clean {i + 1}</span>
-              <span style={{ color: "var(--gold)", fontWeight: 600 }}>
-                {d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
-              </span>
-            </div>
-          ))}
+      {/* Cleaning Forecast timeline */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "24px", marginBottom: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+          <div>
+            <p className="label" style={{ marginBottom: "4px" }}>Cleaning Forecast</p>
+            <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Past cleans and projected future cleans based on {planLabel[customer.plan] || customer.plan} plan ({interval}-month interval)</p>
+          </div>
+          <div style={{ display: "flex", gap: "10px", fontSize: "11px", flexWrap: "wrap" }}>
+            {[["Completed","#4ade80","solid"],["Scheduled","#F5C518","solid"],["Pending","#94a3b8","solid"],["Projected","transparent","outline"]].map(([label, color, kind]) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--text-muted)" }}>
+                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: color as string, border: kind === "outline" ? "1px dashed rgba(255,255,255,0.3)" : "none" }} />
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div style={{ position: "relative", overflowX: "auto", padding: "20px 0 10px" }}>
+          {/* Connecting line */}
+          <div style={{ position: "absolute", top: "42px", left: "20px", right: "20px", height: "2px", background: "rgba(255,255,255,0.07)" }} />
+
+          <div style={{ display: "flex", gap: "0", position: "relative", minWidth: `${dots.length * 110}px` }}>
+            {dots.map(dot => {
+              const isFuture = dot.date > now;
+              const isToday = dot.date.toDateString() === now.toDateString();
+              return (
+                <div
+                  key={dot.key}
+                  title={dot.type === "projected" ? "Projected from plan" : (dot.workerName ? `Worker: ${dot.workerName}` : "")}
+                  style={{ flex: 1, minWidth: "110px", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", position: "relative" }}
+                >
+                  <p style={{ fontSize: "11px", color: isFuture ? "var(--text-muted)" : "var(--text)", fontWeight: 600, height: "14px" }}>
+                    {dot.type === "pending" ? "Pending" : dot.type === "projected" ? "" : ""}
+                  </p>
+                  <div style={{
+                    width: dot.type === "projected" ? "14px" : "18px",
+                    height: dot.type === "projected" ? "14px" : "18px",
+                    borderRadius: "50%",
+                    background: dotColor(dot.type),
+                    border: dot.type === "projected" ? `2px dashed ${dotBorder(dot.type)}` : `2px solid ${dotBorder(dot.type)}`,
+                    boxShadow: isToday ? "0 0 0 4px rgba(245,197,24,0.2)" : "none",
+                    zIndex: 2,
+                    cursor: dot.bookingId ? "pointer" : "default",
+                  }} />
+                  <p style={{ fontSize: "11px", color: "var(--text)", fontWeight: 600, marginTop: "2px" }}>{dot.label}</p>
+                  {dot.workerName && (
+                    <p style={{ fontSize: "10px", color: "var(--text-muted)" }}>{dot.workerName}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Today marker */}
+          <div style={{ position: "absolute", top: "0", bottom: "0", left: `${(() => {
+            // Find closest dot position to today
+            let beforeIdx = -1;
+            dots.forEach((d, i) => { if (d.date <= now) beforeIdx = i; });
+            const pct = dots.length > 0 ? ((beforeIdx + 0.5) / dots.length) * 100 : 0;
+            return Math.max(0, Math.min(100, pct));
+          })()}%`, width: "1px", background: "rgba(245,197,24,0.3)", pointerEvents: "none" }}>
+            <span style={{ position: "absolute", top: 0, left: "4px", fontSize: "9px", color: "var(--gold)", whiteSpace: "nowrap", fontWeight: 600 }}>Today</span>
+          </div>
         </div>
       </div>
 
@@ -250,7 +374,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           {confirmedBookings.map((b) => (
             <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "14px", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
               <div>
-                <span style={{ color: statusColor[b.status], fontWeight: 600 }}>{formatDateTime(b.scheduled_at)}</span>
+                <span style={{ color: statusColor[b.status], fontWeight: 600 }}>{b.scheduled_at ? formatDateTime(b.scheduled_at) : "—"}</span>
                 <span style={{ marginLeft: "10px", fontSize: "12px", color: "var(--text-muted)", textTransform: "capitalize" }}>{b.status}</span>
               </div>
               <button
@@ -365,7 +489,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {completedBookings.map((b) => (
               <div key={b.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                <span style={{ color: "var(--text-muted)" }}>{formatDateTime(b.scheduled_at)}</span>
+                <span style={{ color: "var(--text-muted)" }}>{b.scheduled_at ? formatDateTime(b.scheduled_at) : "—"}</span>
                 <span style={{ color: "#4ade80", fontSize: "12px", fontWeight: 600 }}>Completed ✓</span>
               </div>
             ))}

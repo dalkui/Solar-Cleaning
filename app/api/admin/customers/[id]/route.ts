@@ -14,9 +14,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: jobs } = await supabase
     .from("bookings")
-    .select("*")
+    .select("*, workers(id, name, color)")
     .eq("customer_id", id)
-    .order("scheduled_at", { ascending: false });
+    .order("scheduled_at", { ascending: false, nullsFirst: false });
 
   return NextResponse.json({ customer, jobs: jobs || [] });
 }
