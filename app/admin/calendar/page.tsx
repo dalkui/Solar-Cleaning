@@ -17,7 +17,16 @@ interface Booking {
 
 interface Worker { id: string; name: string; color: string; }
 interface Availability { worker_id: string; day_of_week: number; is_active: boolean; start_time: string; end_time: string; }
-interface UnavailableDate { worker_id: string; date: string; }
+interface UnavailableDate { worker_id: string; date: string; end_date?: string | null; }
+
+function isUnavailableOn(workerId: string, dateStr: string, rows: UnavailableDate[]): boolean {
+  return rows.some(u => {
+    if (u.worker_id !== workerId) return false;
+    const start = u.date.slice(0, 10);
+    const end = (u.end_date || u.date).slice(0, 10);
+    return dateStr >= start && dateStr <= end;
+  });
+}
 interface UnscheduledItem {
   customer_id: string;
   pending_id: string | null;
@@ -100,7 +109,7 @@ function formatMinsLabel(mins: number): string {
 
 function bookingInAvailability(date: Date, workerId: string, availability: Availability[], unavailable: UnavailableDate[]): boolean {
   const dateStr = date.toLocaleDateString("en-CA");
-  if (unavailable.some(u => u.worker_id === workerId && u.date === dateStr)) return false;
+  if (isUnavailableOn(workerId, dateStr, unavailable)) return false;
   const avail = availability.find(a => a.worker_id === workerId && a.day_of_week === date.getDay());
   if (!avail || !avail.is_active) return false;
   const mins = date.getHours() * 60 + date.getMinutes();
@@ -108,7 +117,7 @@ function bookingInAvailability(date: Date, workerId: string, availability: Avail
 }
 
 function minsInAvailability(mins: number, workerId: string, dayOfWeek: number, dateStr: string, availability: Availability[], unavailable: UnavailableDate[]): boolean {
-  if (unavailable.some(u => u.worker_id === workerId && u.date === dateStr)) return false;
+  if (isUnavailableOn(workerId, dateStr, unavailable)) return false;
   const avail = availability.find(a => a.worker_id === workerId && a.day_of_week === dayOfWeek);
   if (!avail || !avail.is_active) return false;
   const absMins = START_HOUR * 60 + mins;
@@ -285,7 +294,7 @@ export default function CalendarPage() {
   const dayOfWeek = selectedDay.getDay();
 
   const rowAvailability = (workerId: string) => {
-    const isOff = unavailableDates.some(u => u.worker_id === workerId && u.date === dateStr);
+    const isOff = isUnavailableOn(workerId, dateStr, unavailableDates);
     if (isOff) return { type: "off" as const };
     const a = availability.find(av => av.worker_id === workerId && av.day_of_week === dayOfWeek);
     if (!a || !a.is_active) return { type: "unavailable" as const };

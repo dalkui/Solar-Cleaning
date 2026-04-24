@@ -13,10 +13,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { date, reason } = await req.json();
+  const { start_date, end_date, date, reason } = await req.json();
+  const startDate = start_date || date;
+  const endDate = end_date || startDate;
+  if (!startDate) return NextResponse.json({ error: "Missing start_date" }, { status: 400 });
+
   const { data, error } = await supabase
     .from("worker_unavailable_dates")
-    .insert({ worker_id: id, date, reason: reason || null })
+    .insert({ worker_id: id, date: startDate, end_date: endDate, reason: reason || null })
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

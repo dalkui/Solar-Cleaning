@@ -6,12 +6,12 @@ import {
   CheckCircle, Bell, CreditCard, Star, Sparkles, Zap,
   AlertTriangle, ArrowRight, LogOut, ChevronRight, ChevronDown, XCircle,
 } from "lucide-react";
-import { Card } from "@/components/portal/Card";
-import { Badge } from "@/components/portal/Badge";
-import { SectionHeader } from "@/components/portal/SectionHeader";
-import { SkeletonCard, Skeleton } from "@/components/portal/Skeleton";
-import { WorkerAvatar } from "@/components/portal/WorkerAvatar";
-import { useToast } from "@/components/portal/Toast";
+import { Card } from "@/components/shared/Card";
+import { Badge } from "@/components/shared/Badge";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SkeletonCard, Skeleton } from "@/components/shared/Skeleton";
+import { WorkerAvatar } from "@/components/shared/WorkerAvatar";
+import { useToast } from "@/components/shared/Toast";
 import { getUpcomingProjections, planMonths } from "@/lib/clean-dates";
 
 interface Customer {

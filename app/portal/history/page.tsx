@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Sparkles, Calendar, Camera, X as XIcon, Clock } from "lucide-react";
-import { Card } from "@/components/portal/Card";
-import { Badge } from "@/components/portal/Badge";
-import { SectionHeader } from "@/components/portal/SectionHeader";
-import { SkeletonCard } from "@/components/portal/Skeleton";
-import { WorkerAvatar } from "@/components/portal/WorkerAvatar";
+import { Card } from "@/components/shared/Card";
+import { Badge } from "@/components/shared/Badge";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SkeletonCard } from "@/components/shared/Skeleton";
+import { WorkerAvatar } from "@/components/shared/WorkerAvatar";
 import { getUpcomingProjections } from "@/lib/clean-dates";
 
 interface Booking {

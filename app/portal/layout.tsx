@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Home as HomeIcon, CheckCircle, Settings as SettingsIcon } from "lucide-react";
-import { ToastProvider } from "@/components/portal/Toast";
+import { ToastProvider } from "@/components/shared/Toast";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -15,6 +15,7 @@ export default function WorkerProfile() {
   const [loading, setLoading] = useState(true);
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [newDate, setNewDate] = useState("");
+  const [newEndDate, setNewEndDate] = useState("");
   const [newReason, setNewReason] = useState("");
   const [resetPin, setResetPin] = useState("");
 
@@ -51,9 +52,9 @@ export default function WorkerProfile() {
     await fetch(`/api/admin/workers/${id}/unavailable`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: newDate, reason: newReason }),
+      body: JSON.stringify({ start_date: newDate, end_date: newEndDate || newDate, reason: newReason }),
     });
-    setNewDate(""); setNewReason("");
+    setNewDate(""); setNewEndDate(""); setNewReason("");
     load();
   };
 
@@ -160,24 +161,36 @@ export default function WorkerProfile() {
       <section style={{ marginBottom: "32px" }}>
         <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px" }}>Days Off</h3>
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "16px" }}>
-          <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-            <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} style={{ padding: "8px 10px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "13px" }} />
-            <input type="text" value={newReason} onChange={e => setNewReason(e.target.value)} placeholder="Reason (optional)" style={{ flex: 1, padding: "8px 10px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "13px" }} />
+          <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+            <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} placeholder="From" style={{ padding: "8px 10px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "13px" }} />
+            <span style={{ alignSelf: "center", color: "var(--text-muted)", fontSize: "13px" }}>→</span>
+            <input type="date" value={newEndDate} onChange={e => setNewEndDate(e.target.value)} placeholder="To" min={newDate} style={{ padding: "8px 10px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "13px" }} />
+            <input type="text" value={newReason} onChange={e => setNewReason(e.target.value)} placeholder="Reason (optional)" style={{ flex: 1, minWidth: "160px", padding: "8px 10px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "13px" }} />
             <button onClick={addUnavailable} className="btn btn-gold" style={{ fontSize: "13px" }}>Add</button>
           </div>
           {data.unavailable_dates.length === 0 ? (
             <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>No days off scheduled</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {data.unavailable_dates.map((d: any) => (
-                <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--bg)", borderRadius: "6px" }}>
-                  <div>
-                    <span style={{ fontSize: "13px" }}>{new Date(d.date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span>
-                    {d.reason && <span style={{ marginLeft: "10px", fontSize: "12px", color: "var(--text-muted)" }}>— {d.reason}</span>}
+              {data.unavailable_dates.map((d: any) => {
+                const start = new Date(d.date + "T00:00:00");
+                const end = new Date((d.end_date || d.date) + "T00:00:00");
+                const sameDay = d.date === (d.end_date || d.date);
+                const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+                const label = sameDay
+                  ? start.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+                  : `${start.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} → ${end.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}`;
+                return (
+                  <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "var(--bg)", borderRadius: "6px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 500 }}>{label}</span>
+                      <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--gold)", background: "rgba(245,197,24,0.1)", padding: "2px 8px", borderRadius: "999px" }}>{days} {days === 1 ? "day" : "days"}</span>
+                      {d.reason && <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>{d.reason}</span>}
+                    </div>
+                    <button onClick={() => delUnavailable(d.id)} style={{ background: "transparent", border: "none", color: "#f87171", cursor: "pointer", fontSize: "16px" }}>×</button>
                   </div>
-                  <button onClick={() => delUnavailable(d.id)} style={{ background: "transparent", border: "none", color: "#f87171", cursor: "pointer", fontSize: "16px" }}>×</button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

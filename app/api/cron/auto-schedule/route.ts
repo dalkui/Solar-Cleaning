@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Resend } from "resend";
 import { sendSMS } from "@/lib/sms";
 import { renderEmail } from "@/lib/email-template";
+import { isWorkerUnavailableOnDate } from "@/lib/availability";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -65,7 +66,7 @@ export async function GET() {
 
       // Rank workers: last worker first, then by (jobs in same suburb ASC but non-zero, then total jobs ASC)
       const workerOptions = workers
-        .filter((w: any) => !unavailable.some((u: any) => u.worker_id === w.id && u.date === dateStr))
+        .filter((w: any) => !isWorkerUnavailableOnDate(w.id, dateStr, unavailable as any))
         .filter((w: any) => {
           const a = availability.find((av: any) => av.worker_id === w.id && av.day_of_week === dow);
           return a && a.is_active;

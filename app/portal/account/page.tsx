@@ -6,11 +6,11 @@ import {
   CreditCard, Receipt, MapPin, Phone, Mail, Download,
   CheckCircle, Pause, Calendar, Clock, Shield,
 } from "lucide-react";
-import { Card } from "@/components/portal/Card";
-import { Badge } from "@/components/portal/Badge";
-import { SectionHeader } from "@/components/portal/SectionHeader";
-import { SkeletonCard } from "@/components/portal/Skeleton";
-import { useToast } from "@/components/portal/Toast";
+import { Card } from "@/components/shared/Card";
+import { Badge } from "@/components/shared/Badge";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { SkeletonCard } from "@/components/shared/Skeleton";
+import { useToast } from "@/components/shared/Toast";
 
 interface Customer {
   id: string; name: string; email: string; phone: string;

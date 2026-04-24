@@ -8,10 +8,15 @@ export async function POST(req: NextRequest) {
   const session = await verifyWorkerToken(token);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { date, reason } = await req.json();
+  const { start_date, end_date, date, reason } = await req.json();
+  const startDate = start_date || date;
+  const endDate = end_date || startDate;
+  if (!startDate) return NextResponse.json({ error: "Missing start_date" }, { status: 400 });
+  if (endDate < startDate) return NextResponse.json({ error: "End date must be on or after start date" }, { status: 400 });
+
   const { data, error } = await supabase
     .from("worker_unavailable_dates")
-    .insert({ worker_id: session.workerId, date, reason: reason || null })
+    .insert({ worker_id: session.workerId, date: startDate, end_date: endDate, reason: reason || null })
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -28,7 +33,6 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  // Verify the date belongs to this worker
   const { data: row } = await supabase
     .from("worker_unavailable_dates")
     .select("worker_id")
