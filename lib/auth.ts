@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 const ADMIN_COOKIE = "admin_token";
 const WORKER_COOKIE = "worker_token";
+const CUSTOMER_COOKIE = "customer_token";
 const secret = () => new TextEncoder().encode(process.env.ADMIN_JWT_SECRET!);
 
 export async function signAdminToken() {
@@ -51,4 +52,27 @@ export async function getWorkerSession() {
   return verifyWorkerToken(token);
 }
 
-export { ADMIN_COOKIE as COOKIE_NAME, WORKER_COOKIE };
+export async function signCustomerToken(customerId: string) {
+  return new SignJWT({ customerId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("12h")
+    .sign(secret());
+}
+
+export async function verifyCustomerToken(token: string): Promise<{ customerId: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    return { customerId: payload.customerId as string };
+  } catch {
+    return null;
+  }
+}
+
+export async function getCustomerSession() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(CUSTOMER_COOKIE)?.value;
+  if (!token) return null;
+  return verifyCustomerToken(token);
+}
+
+export { ADMIN_COOKIE as COOKIE_NAME, WORKER_COOKIE, CUSTOMER_COOKIE };

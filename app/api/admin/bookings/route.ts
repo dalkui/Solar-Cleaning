@@ -68,7 +68,10 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  if (worker_id) notifyWorkerAssignment(worker_id, data.id);
+  if (worker_id) {
+    notifyWorkerAssignment(worker_id, data.id);
+    await supabase.from("customers").update({ last_worker_id: worker_id }).eq("id", customer_id);
+  }
 
   return NextResponse.json(data);
 }

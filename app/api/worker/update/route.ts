@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyWorkerToken } from "@/lib/auth";
 import { Resend } from "resend";
+import { sendSMS } from "@/lib/sms";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const { data: booking } = await supabase
     .from("bookings")
-    .select("*, customers(id, name, email, plan)")
+    .select("*, customers(id, name, email, phone, plan, sms_opt_out)")
     .eq("id", booking_id)
     .eq("worker_id", session.workerId)
     .single();
@@ -55,6 +56,14 @@ export async function POST(req: NextRequest) {
 
   if (type === "arrived") {
     await supabase.from("bookings").update({ status: "in_progress" }).eq("id", booking_id);
+    const customer = booking.customers as any;
+    if (customer?.phone && !customer.sms_opt_out) {
+      await sendSMS(
+        customer.phone,
+        `${session.name} has arrived at your place for your FluroSolar clean. We'll be done soon ☀️`,
+        { customerId: customer.id, purpose: "confirmation" }
+      );
+    }
   } else if (type === "completed") {
     await supabase.from("bookings").update({ status: "completed" }).eq("id", booking_id);
 

@@ -80,6 +80,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (body.worker_id && body.worker_id !== previousWorkerId) {
     notifyWorkerAssignment(body.worker_id, id, !!previousWorkerId);
+    // Update customer stickiness
+    const { data: booking } = await supabase.from("bookings").select("customer_id").eq("id", id).single();
+    if (booking?.customer_id) {
+      await supabase.from("customers").update({ last_worker_id: body.worker_id }).eq("id", booking.customer_id);
+    }
   }
 
   return NextResponse.json({ ok: true });

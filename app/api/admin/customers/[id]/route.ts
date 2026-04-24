@@ -25,9 +25,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
 
+  const update: Record<string, any> = {};
+  const allowed = ["notes", "auto_schedule", "preferred_time_of_day", "sms_opt_out", "name", "phone", "email", "street", "suburb", "state", "postcode"];
+  for (const k of allowed) {
+    if (body[k] !== undefined) update[k] = body[k];
+  }
+
   const { error } = await supabase
     .from("customers")
-    .update({ notes: body.notes })
+    .update(update)
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

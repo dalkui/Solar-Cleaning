@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
           postcode: bookingDetails.postcode || "",
           stories:  bookingDetails.stories  || "",
           panels:   bookingDetails.panels   || "",
+          auto_schedule: bookingDetails.auto_schedule === false ? "false" : "true",
+          preferred_time_of_day: bookingDetails.preferred_time_of_day || "any",
         },
       },
       return_url: `${origin}/success?plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,

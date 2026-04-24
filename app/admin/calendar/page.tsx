@@ -392,7 +392,10 @@ export default function CalendarPage() {
 
   const renderLane = (workerId: string | null, workerName: string, workerColor: string) => {
     const rowBookings = bookings.filter(b => (workerId ? b.worker_id === workerId : !b.worker_id))
-                                .filter(b => new Date(b.scheduled_at).toDateString() === selectedDay.toDateString());
+                                .filter(b => new Date(b.scheduled_at).toDateString() === selectedDay.toDateString())
+                                .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+    const stopNumbers: Record<string, number> = {};
+    if (workerId && rowBookings.length > 1) rowBookings.forEach((b, i) => { stopNumbers[b.id] = i + 1; });
     const overlay = workerId ? rowAvailability(workerId) : { type: "available" as const, start: 0, end: 100 };
     const isDragOver = dragState?.hoverRow === (workerId || "unassigned");
     const rowBlocked = isDragOver && dragState?.blocked;
@@ -543,7 +546,14 @@ export default function CalendarPage() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <p style={{ fontSize: "10px", fontWeight: 700, color, marginBottom: "2px" }}>{formatTime(b.scheduled_at)}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <p style={{ fontSize: "10px", fontWeight: 700, color }}>{formatTime(b.scheduled_at)}</p>
+                    {stopNumbers[b.id] && (
+                      <span style={{ fontSize: "8px", fontWeight: 700, color: "#94a3b8", background: "rgba(148,163,184,0.15)", padding: "1px 5px", borderRadius: "3px" }}>
+                        {stopNumbers[b.id]}
+                      </span>
+                    )}
+                  </div>
                   {isUnassigned && <span style={{ fontSize: "8px", fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,0.2)", padding: "1px 5px", borderRadius: "3px", letterSpacing: "0.05em" }}>!</span>}
                 </div>
                 <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.customers?.name?.split(" ")[0]}</p>

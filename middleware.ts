@@ -15,7 +15,7 @@ async function verifyJwt(token: string) {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/admin/login" || pathname === "/worker/login") {
+  if (pathname === "/admin/login" || pathname === "/worker/login" || pathname === "/portal/login" || pathname === "/portal/verify") {
     return NextResponse.next();
   }
 
@@ -35,9 +35,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/portal")) {
+    const token = request.cookies.get("customer_token")?.value;
+    if (!token) return NextResponse.redirect(new URL("/portal/login", request.url));
+    const valid = await verifyJwt(token);
+    if (!valid) return NextResponse.redirect(new URL("/portal/login", request.url));
+    return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/schedule/:path*", "/schedule", "/worker/:path*", "/worker"],
+  matcher: ["/admin/:path*", "/schedule/:path*", "/schedule", "/worker/:path*", "/worker", "/portal/:path*", "/portal"],
 };

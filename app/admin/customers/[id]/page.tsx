@@ -9,6 +9,9 @@ interface Customer {
   plan: string; stories: string; panels: string; status: string;
   subscribed_at: string; cancelled_at?: string; notes?: string;
   stripe_subscription_id: string;
+  auto_schedule?: boolean;
+  preferred_time_of_day?: string;
+  payment_status?: string;
 }
 
 interface Booking {
@@ -297,6 +300,55 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
               <span style={{ fontWeight: 500, textAlign: "right", maxWidth: "60%" }}>{value || "—"}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Scheduling preferences */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px", marginBottom: "16px" }}>
+        <p className="label" style={{ marginBottom: "14px" }}>Scheduling Preferences</p>
+        <div style={{ display: "flex", gap: "24px", alignItems: "center", flexWrap: "wrap" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={customer.auto_schedule ?? true}
+              onChange={async e => {
+                setCustomer({ ...customer, auto_schedule: e.target.checked });
+                await fetch(`/api/admin/customers/${id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ auto_schedule: e.target.checked }),
+                });
+              }}
+              style={{ width: "18px", height: "18px", accentColor: "#F5C518" }}
+            />
+            <span style={{ fontSize: "14px" }}>Auto-schedule cleans</span>
+          </label>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Time preference:</span>
+            <select
+              value={customer.preferred_time_of_day || "any"}
+              onChange={async e => {
+                setCustomer({ ...customer, preferred_time_of_day: e.target.value });
+                await fetch(`/api/admin/customers/${id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ preferred_time_of_day: e.target.value }),
+                });
+              }}
+              style={{ padding: "6px 10px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "13px" }}
+            >
+              <option value="any">Any time</option>
+              <option value="morning">Morning (8am–12pm)</option>
+              <option value="afternoon">Afternoon (12pm–5pm)</option>
+            </select>
+          </div>
+
+          {customer.payment_status === "past_due" && (
+            <span style={{ fontSize: "11px", fontWeight: 700, color: "#f87171", background: "rgba(248,113,113,0.1)", padding: "4px 10px", borderRadius: "999px" }}>
+              PAYMENT ISSUE
+            </span>
+          )}
         </div>
       </div>
 

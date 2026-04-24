@@ -37,10 +37,14 @@ function BookInner() {
   const [form, setForm] = useState({
     name: "", phone: "", street: "", suburb: "",
     state: "", postcode: "", stories: "", panels: "",
+    auto_schedule: true,
+    preferred_time_of_day: "any",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const target = e.target;
+    const value = target.type === "checkbox" ? target.checked : target.value;
+    setForm({ ...form, [target.name]: value });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -159,6 +163,60 @@ function BookInner() {
             <p style={{ marginTop: "8px", fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.6 }}>
               Systems with an unusually large number of panels may require a custom quote. We'll reach out if this applies to you.
             </p>
+          </div>
+
+          {/* Auto-schedule toggle */}
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "16px" }}>
+            <label style={{ display: "flex", gap: "12px", alignItems: "flex-start", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                name="auto_schedule"
+                checked={form.auto_schedule}
+                onChange={handleChange}
+                style={{ marginTop: "3px", width: "18px", height: "18px", accentColor: "#F5C518", flexShrink: 0 }}
+              />
+              <div>
+                <p style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px", color: "var(--text)" }}>Schedule my cleans automatically</p>
+                <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.5 }}>We'll pick the best time in your due month and let you know. You can always reschedule.</p>
+              </div>
+            </label>
+
+            {!form.auto_schedule && (
+              <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--border)" }}>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>Preferred time of day:</p>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {[
+                    { value: "any", label: "Any time" },
+                    { value: "morning", label: "Morning (8am–12pm)" },
+                    { value: "afternoon", label: "Afternoon (12pm–5pm)" },
+                  ].map(opt => (
+                    <label key={opt.value} style={{
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "8px 10px",
+                      background: form.preferred_time_of_day === opt.value ? "rgba(245,197,24,0.08)" : "var(--bg)",
+                      border: `1px solid ${form.preferred_time_of_day === opt.value ? "rgba(245,197,24,0.4)" : "var(--border)"}`,
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      textAlign: "center",
+                    }}>
+                      <input
+                        type="radio"
+                        name="preferred_time_of_day"
+                        value={opt.value}
+                        checked={form.preferred_time_of_day === opt.value}
+                        onChange={handleChange}
+                        style={{ display: "none" }}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <button type="submit" className="btn btn-gold" style={{ width: "100%", marginTop: "8px" }}>
