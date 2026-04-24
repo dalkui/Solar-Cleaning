@@ -43,12 +43,29 @@ async function notifyWorkerAssignment(workerId: string, bookingId: string, reass
 }
 
 export async function POST(req: NextRequest) {
-  const { customer_id, scheduled_at, worker_id } = await req.json();
-  const { data, error } = await supabase
-    .from("bookings")
-    .insert({ customer_id, scheduled_at, status: "confirmed", worker_id: worker_id || null })
-    .select()
-    .single();
+  const { customer_id, scheduled_at, worker_id, pending_booking_id } = await req.json();
+
+  let data: any;
+  let error: any;
+
+  if (pending_booking_id) {
+    // Promote existing pending booking instead of creating a new one
+    const result = await supabase
+      .from("bookings")
+      .update({ scheduled_at, worker_id: worker_id || null, status: "confirmed" })
+      .eq("id", pending_booking_id)
+      .select()
+      .single();
+    data = result.data; error = result.error;
+  } else {
+    const result = await supabase
+      .from("bookings")
+      .insert({ customer_id, scheduled_at, status: "confirmed", worker_id: worker_id || null })
+      .select()
+      .single();
+    data = result.data; error = result.error;
+  }
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   if (worker_id) notifyWorkerAssignment(worker_id, data.id);

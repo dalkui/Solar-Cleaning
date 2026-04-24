@@ -5,8 +5,24 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-function getNextCleanDate(plan: string): string {
-  const months = plan === "elite" ? 3 : plan === "standard" ? 6 : 12;
+function planMonths(plan: string): number {
+  if (plan === "elite") return 3;
+  if (plan === "basic") return 12;
+  return 6;
+}
+
+function addMonths(date: Date, months: number): Date {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function firstOfMonth(date: Date): string {
+  return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().slice(0, 10);
+}
+
+function getNextCleanDateLabel(plan: string): string {
+  const months = planMonths(plan);
   const d = new Date();
   d.setMonth(d.getMonth() + months);
   return d.toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric", timeZone: "Australia/Sydney" });
@@ -21,17 +37,15 @@ export async function POST(req: NextRequest) {
 
   const { booking_id, type, note } = await req.json();
 
-  // Verify booking belongs to this worker
   const { data: booking } = await supabase
     .from("bookings")
-    .select("*, customers(name, email, plan)")
+    .select("*, customers(id, name, email, plan)")
     .eq("id", booking_id)
     .eq("worker_id", session.workerId)
     .single();
 
   if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  // Insert job update log
   await supabase.from("job_updates").insert({
     booking_id,
     worker_id: session.workerId,
@@ -39,16 +53,37 @@ export async function POST(req: NextRequest) {
     note: note || null,
   });
 
-  // Update booking status
   if (type === "arrived") {
     await supabase.from("bookings").update({ status: "in_progress" }).eq("id", booking_id);
   } else if (type === "completed") {
     await supabase.from("bookings").update({ status: "completed" }).eq("id", booking_id);
 
-    // Send completion email to customer
     const customer = booking.customers as any;
+
+    // Auto-create next pending booking
+    if (customer) {
+      const now = new Date();
+      const dueDate = addMonths(now, planMonths(customer.plan));
+
+      const { data: existingPending } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("customer_id", customer.id)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (!existingPending) {
+        await supabase.from("bookings").insert({
+          customer_id: customer.id,
+          status: "pending",
+          due_month: firstOfMonth(dueDate),
+          scheduled_at: null,
+        });
+      }
+    }
+
     if (customer?.email) {
-      const nextClean = getNextCleanDate(customer.plan);
+      const nextClean = getNextCleanDateLabel(customer.plan);
       await resend.emails.send({
         from: "FluroSolar <noreply@flurosolar.com.au>",
         to: customer.email,
@@ -63,16 +98,15 @@ export async function POST(req: NextRequest) {
             <p style="color:#3A5268;font-size:13px;margin-top:24px;">Thank you for being a FluroSolar customer.</p>
           </div>
         `,
-      });
+      }).catch(() => {});
     }
 
-    // Send notification to admin
     await resend.emails.send({
       from: "FluroSolar <noreply@flurosolar.com.au>",
       to: "fluroservices@gmail.com",
-      subject: `Job completed – ${(booking.customers as any)?.name}`,
-      html: `<p>${session.name} marked the job for <strong>${(booking.customers as any)?.name}</strong> as completed.</p>`,
-    });
+      subject: `Job completed – ${customer?.name}`,
+      html: `<p>${session.name} marked the job for <strong>${customer?.name}</strong> as completed.</p>`,
+    }).catch(() => {});
   }
 
   return NextResponse.json({ ok: true });

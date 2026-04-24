@@ -40,6 +40,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
   const tabs = [
     { label: "Today", href: "/worker", icon: "☀️" },
     { label: "Schedule", href: "/worker/schedule", icon: "📅" },
+    { label: "Availability", href: "/worker/availability", icon: "⏰" },
     { label: "History", href: "/worker/history", icon: "✓" },
   ];
 
@@ -70,7 +71,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
             maxWidth: "480px",
             margin: "0 auto",
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr",
           }}>
             {tabs.map(t => {
               const active = pathname === t.href;

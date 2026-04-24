@@ -6,6 +6,22 @@ import { Resend } from "resend";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
+function planMonths(plan: string): number {
+  if (plan === "elite") return 3;
+  if (plan === "basic") return 12;
+  return 6;
+}
+
+function addMonths(date: Date, months: number): Date {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function firstOfMonth(date: Date): string {
+  return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().slice(0, 10);
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature")!;
@@ -22,8 +38,10 @@ export async function POST(req: NextRequest) {
     const meta = sub.metadata || {};
 
     const stripeCustomer = await stripe.customers.retrieve(sub.customer as string) as Stripe.Customer;
+    const subscribedAt = new Date(sub.start_date * 1000);
+    const plan = meta.plan || "standard";
 
-    await supabase.from("customers").upsert({
+    const { data: customer } = await supabase.from("customers").upsert({
       stripe_subscription_id: sub.id,
       stripe_customer_id: sub.customer as string,
       name:     meta.name     || stripeCustomer.name || "",
@@ -35,10 +53,30 @@ export async function POST(req: NextRequest) {
       postcode: meta.postcode || "",
       stories:  meta.stories  || "",
       panels:   meta.panels   || "",
-      plan:     meta.plan     || "standard",
+      plan,
       status:   "active",
-      subscribed_at: new Date(sub.start_date * 1000).toISOString(),
-    }, { onConflict: "stripe_subscription_id" });
+      subscribed_at: subscribedAt.toISOString(),
+    }, { onConflict: "stripe_subscription_id" }).select().single();
+
+    // Auto-create a pending booking for the next due month
+    if (customer) {
+      const { data: existing } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("customer_id", customer.id)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (!existing) {
+        const dueDate = addMonths(subscribedAt, planMonths(plan));
+        await supabase.from("bookings").insert({
+          customer_id: customer.id,
+          status: "pending",
+          due_month: firstOfMonth(dueDate),
+          scheduled_at: null,
+        });
+      }
+    }
   }
 
   if (event.type === "customer.subscription.deleted") {

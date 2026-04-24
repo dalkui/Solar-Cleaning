@@ -12,7 +12,33 @@ interface Customer {
 }
 
 interface Booking {
-  id: string; scheduled_at: string; status: string; created_at: string;
+  id: string; scheduled_at: string; status: string; created_at: string; worker_id?: string | null;
+}
+
+interface Worker { id: string; name: string; color: string; }
+interface Availability { worker_id: string; day_of_week: number; is_active: boolean; start_time: string; end_time: string; }
+interface UnavailableDate { worker_id: string; date: string; }
+
+function timeStrToMins(t: string) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
+
+function buildSlots(start: string, end: string): string[] {
+  const out: string[] = [];
+  let mins = timeStrToMins(start);
+  const endMins = timeStrToMins(end);
+  while (mins < endMins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    out.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
+    mins += 30;
+  }
+  return out;
+}
+
+function formatTimeLabel(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "pm" : "am";
+  const hh = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+  return `${hh}:${m.toString().padStart(2, "0")} ${period}`;
 }
 
 const planLabel: Record<string, string> = { basic: "Basic", standard: "Standard", elite: "Elite" };
@@ -28,6 +54,15 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
   const [sendingLink, setSendingLink] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
 
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [availability, setAvailability] = useState<Availability[]>([]);
+  const [unavailable, setUnavailable] = useState<UnavailableDate[]>([]);
+  const [schDate, setSchDate] = useState("");
+  const [schWorker, setSchWorker] = useState("");
+  const [schTime, setSchTime] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+
   const loadData = () => {
     fetch(`/api/admin/customers/${id}`)
       .then((r) => r.json())
@@ -36,6 +71,14 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
         setNotes(c?.notes || "");
         setBookings(j || []);
       });
+  };
+
+  const loadSchedulingData = () => {
+    fetch("/api/admin/calendar").then(r => r.json()).then(d => {
+      setWorkers(d.workers || []);
+      setAvailability(d.availability || []);
+      setUnavailable(d.unavailable_dates || []);
+    });
   };
 
   useEffect(() => { loadData(); }, [id]);
@@ -73,12 +116,62 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
     loadData();
   };
 
+  const openSchedule = () => {
+    loadSchedulingData();
+    setScheduleOpen(true);
+  };
+
+  const pendingBooking = bookings.find(b => b.status === "pending");
+
+  const availableWorkersForDate = (() => {
+    if (!schDate) return workers;
+    const d = new Date(schDate + "T00:00:00");
+    const dow = d.getDay();
+    const dateStr = schDate;
+    return workers.filter(w => {
+      if (unavailable.some(u => u.worker_id === w.id && u.date === dateStr)) return false;
+      const a = availability.find(av => av.worker_id === w.id && av.day_of_week === dow);
+      return a && a.is_active;
+    });
+  })();
+
+  const availableSlotsForWorker = (() => {
+    if (!schDate || !schWorker) return [];
+    const d = new Date(schDate + "T00:00:00");
+    const a = availability.find(av => av.worker_id === schWorker && av.day_of_week === d.getDay());
+    if (!a || !a.is_active) return [];
+    return buildSlots(a.start_time, a.end_time);
+  })();
+
+  const submitSchedule = async () => {
+    if (!schDate || !schTime) return;
+    setScheduling(true);
+    const [h, m] = schTime.split(":").map(Number);
+    const dt = new Date(schDate + "T00:00:00");
+    dt.setHours(h, m, 0, 0);
+
+    await fetch("/api/admin/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customer_id: id,
+        scheduled_at: dt.toISOString(),
+        worker_id: schWorker || null,
+        pending_booking_id: pendingBooking?.id || null,
+      }),
+    });
+    setScheduling(false);
+    setScheduleOpen(false);
+    setSchDate(""); setSchWorker(""); setSchTime("");
+    loadData();
+  };
+
   if (!customer) return <p style={{ color: "var(--text-muted)" }}>Loading…</p>;
 
   const nextDates = getNextCleanDates(new Date(customer.subscribed_at), customer.plan, 4);
   const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(`${customer.street}, ${customer.suburb} ${customer.postcode} ${customer.state}`)}`;
 
-  const confirmedBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "pending");
+  const confirmedBookings = bookings.filter((b) => (b.status === "confirmed" || b.status === "in_progress") && b.scheduled_at);
   const completedBookings = bookings.filter((b) => b.status === "completed");
 
   return (
@@ -93,6 +186,14 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           <span style={{ fontSize: "12px", fontWeight: 600, color: customer.status === "active" ? "#4ade80" : "#f87171", textTransform: "capitalize" }}>{customer.status}</span>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            onClick={openSchedule}
+            disabled={customer.status !== "active"}
+            className="btn btn-gold"
+            style={{ fontSize: "14px", opacity: customer.status !== "active" ? 0.4 : 1 }}
+          >
+            Schedule Next Clean
+          </button>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               onClick={sendBookingLink}
@@ -104,7 +205,7 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
             </button>
             {linkSent && <span style={{ fontSize: "13px", color: "#4ade80" }}>Sent ✓</span>}
           </div>
-          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-gold" style={{ fontSize: "14px" }}>
+          <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline" style={{ fontSize: "14px" }}>
             Open in Maps →
           </a>
         </div>
@@ -180,6 +281,80 @@ export default function CustomerProfile({ params }: { params: Promise<{ id: stri
           {saved && <span style={{ fontSize: "13px", color: "#4ade80" }}>Saved ✓</span>}
         </div>
       </div>
+
+      {/* Schedule modal */}
+      {scheduleOpen && (
+        <div onClick={() => setScheduleOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: "20px" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "14px", padding: "28px", maxWidth: "460px", width: "100%" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "20px" }}>Schedule Next Clean</h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div>
+                <label style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "6px" }}>Date</label>
+                <input
+                  type="date"
+                  value={schDate}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={e => { setSchDate(e.target.value); setSchWorker(""); setSchTime(""); }}
+                  style={{ width: "100%", padding: "10px 12px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "14px" }}
+                />
+              </div>
+
+              {schDate && (
+                <div>
+                  <label style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "6px" }}>Worker</label>
+                  {availableWorkersForDate.length === 0 ? (
+                    <p style={{ fontSize: "13px", color: "#f87171", padding: "10px", background: "rgba(248,113,113,0.08)", borderRadius: "8px" }}>No workers available on this date</p>
+                  ) : (
+                    <select
+                      value={schWorker}
+                      onChange={e => { setSchWorker(e.target.value); setSchTime(""); }}
+                      style={{ width: "100%", padding: "10px 12px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: "14px" }}
+                    >
+                      <option value="">Select worker…</option>
+                      {availableWorkersForDate.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {schWorker && availableSlotsForWorker.length > 0 && (
+                <div>
+                  <label style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "6px" }}>Time</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", maxHeight: "180px", overflowY: "auto" }}>
+                    {availableSlotsForWorker.map(t => (
+                      <button
+                        key={t}
+                        onClick={() => setSchTime(t)}
+                        style={{
+                          padding: "8px",
+                          background: schTime === t ? "rgba(245,197,24,0.15)" : "var(--bg)",
+                          color: schTime === t ? "var(--gold)" : "var(--text)",
+                          border: `1px solid ${schTime === t ? "var(--gold)" : "var(--border)"}`,
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                          cursor: "pointer",
+                          fontWeight: schTime === t ? 700 : 500,
+                        }}
+                      >{formatTimeLabel(t)}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                <button onClick={() => setScheduleOpen(false)} style={{ flex: 1, padding: "12px", background: "transparent", color: "var(--text-muted)", border: "1px solid var(--border)", borderRadius: "8px", cursor: "pointer" }}>Cancel</button>
+                <button
+                  onClick={submitSchedule}
+                  disabled={!schDate || !schWorker || !schTime || scheduling}
+                  className="btn btn-gold"
+                  style={{ flex: 1, opacity: (!schDate || !schWorker || !schTime) ? 0.4 : 1 }}
+                >{scheduling ? "Booking…" : "Confirm Booking"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clean history */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "24px" }}>
